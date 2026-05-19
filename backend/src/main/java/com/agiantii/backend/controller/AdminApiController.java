@@ -42,6 +42,9 @@ public class AdminApiController {
     @Resource
     private TeacherMapper teacherMapper;
 
+    @Resource
+    private StudentMapper studentMapper;
+
     // ==================== Token 校验 ====================
 
     private Map<String, Object> requireAdmin(String authHeader) {
@@ -605,5 +608,313 @@ public class AdminApiController {
         if (requireAdmin(authHeader) == null) return R.error("未登录或非管理员", 401);
         log.info("GET /admin/classrooms/options");
         return R.success(classroomMapper.selectActiveAll(), "成功");
+    }
+
+    @GetMapping("/majors/options")
+    @ApiOperation("管理员-专业下拉列表（用于新增学生表单）")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "Authorization", value = "Bearer {token}", required = true, dataType = "string", paramType = "header")
+    })
+    public R<List<com.agiantii.backend.pojo.Major>> majorOptions(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (requireAdmin(authHeader) == null) return R.error("未登录或非管理员", 401);
+        log.info("GET /admin/majors/options");
+        return R.success(majorMapper.selectActiveAll(), "成功");
+    }
+
+    @GetMapping("/departments/options")
+    @ApiOperation("管理员-院系下拉列表（用于新增教师表单）")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "Authorization", value = "Bearer {token}", required = true, dataType = "string", paramType = "header")
+    })
+    public R<List<com.agiantii.backend.pojo.Department>> departmentOptions(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (requireAdmin(authHeader) == null) return R.error("未登录或非管理员", 401);
+        log.info("GET /admin/departments/options");
+        return R.success(departmentMapper.selectActiveAll(), "成功");
+    }
+
+    // ==================== 学生管理 ====================
+
+    @GetMapping("/students")
+    @ApiOperation("管理员-查询学生列表（支持按专业/状态筛选）")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "majorId", value = "专业ID（可选）", paramType = "query"),
+            @ApiImplicitParam(name = "status", value = "状态 1=正常 0=休学/退学（可选）", paramType = "query"),
+            @ApiImplicitParam(name = "Authorization", value = "Bearer {token}", required = true, dataType = "string", paramType = "header")
+    })
+    public R<List<Map<String, Object>>> listStudents(
+            @RequestParam(required = false) Integer majorId,
+            @RequestParam(required = false) Integer status,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (requireAdmin(authHeader) == null) return R.error("未登录或非管理员", 401);
+        log.info("GET /admin/students: majorId={}, status={}", majorId, status);
+        List<Map<String, Object>> list = studentMapper.selectAllForAdmin(majorId, status);
+        return R.success(list, "成功");
+    }
+
+    @GetMapping("/students/{id}")
+    @ApiOperation("管理员-查询学生详情")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "学生ID", required = true, paramType = "path"),
+            @ApiImplicitParam(name = "Authorization", value = "Bearer {token}", required = true, dataType = "string", paramType = "header")
+    })
+    public R<Map<String, Object>> getStudent(
+            @PathVariable Integer id,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (requireAdmin(authHeader) == null) return R.error("未登录或非管理员", 401);
+        log.info("GET /admin/students/{}", id);
+        Map<String, Object> student = studentMapper.selectByIdForAdmin(id);
+        if (student == null) return R.error("学生不存在", 404);
+        return R.success(student, "成功");
+    }
+
+    @PostMapping("/students")
+    @ApiOperation("管理员-新增学生")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "Authorization", value = "Bearer {token}", required = true, dataType = "string", paramType = "header")
+    })
+    public R<Map<String, Object>> addStudent(
+            @RequestBody Map<String, Object> body,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (requireAdmin(authHeader) == null) return R.error("未登录或非管理员", 401);
+        log.info("POST /admin/students: {}", body);
+
+        String studentNo = (String) body.get("studentNo");
+        String studentName = (String) body.get("studentName");
+        if (studentNo == null || studentNo.trim().isEmpty() || studentName == null || studentName.trim().isEmpty()) {
+            return R.error("学号和姓名不能为空", 400);
+        }
+        if (body.get("majorId") == null) return R.error("专业不能为空", 400);
+        if (majorMapper.selectById(toInt(body.get("majorId"))) == null) return R.error("专业不存在", 400);
+        if (body.get("userId") == null) return R.error("用户ID不能为空", 400);
+
+        body.putIfAbsent("status", 1);
+        body.putIfAbsent("gender", "M");
+        body.putIfAbsent("enrollmentYear", 2025);
+        studentMapper.insertStudentAdmin(body);
+
+        Integer newId = toInt(body.get("studentId"));
+        Map<String, Object> student = studentMapper.selectByIdForAdmin(newId);
+        return R.success(student, "学生新增成功");
+    }
+
+    @PutMapping("/students/{id}")
+    @ApiOperation("管理员-修改学生")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "学生ID", required = true, paramType = "path"),
+            @ApiImplicitParam(name = "Authorization", value = "Bearer {token}", required = true, dataType = "string", paramType = "header")
+    })
+    public R<Map<String, Object>> updateStudent(
+            @PathVariable Integer id,
+            @RequestBody Map<String, Object> body,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (requireAdmin(authHeader) == null) return R.error("未登录或非管理员", 401);
+        log.info("PUT /admin/students/{}: {}", id, body);
+
+        Map<String, Object> existing = studentMapper.selectByIdForAdmin(id);
+        if (existing == null) return R.error("学生不存在", 404);
+
+        if (body.get("majorId") != null && majorMapper.selectById(toInt(body.get("majorId"))) == null) {
+            return R.error("专业不存在", 400);
+        }
+
+        // 只更新前端传入的字段
+        for (Map.Entry<String, Object> entry : existing.entrySet()) {
+            body.putIfAbsent(entry.getKey(), entry.getValue());
+        }
+
+        body.put("studentId", id);
+        studentMapper.updateStudentAdmin(body);
+
+        Map<String, Object> updated = studentMapper.selectByIdForAdmin(id);
+        return R.success(updated, "学生修改成功");
+    }
+
+    @PutMapping("/students/{id}/disable")
+    @ApiOperation("管理员-停用学生")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "学生ID", required = true, paramType = "path"),
+            @ApiImplicitParam(name = "Authorization", value = "Bearer {token}", required = true, dataType = "string", paramType = "header")
+    })
+    public R<String> disableStudent(
+            @PathVariable Integer id,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (requireAdmin(authHeader) == null) return R.error("未登录或非管理员", 401);
+        log.info("PUT /admin/students/{}/disable", id);
+
+        if (studentMapper.selectByIdForAdmin(id) == null) return R.error("学生不存在", 404);
+
+        int refEnrollments = studentMapper.countReferencedEnrollments(id);
+        if (refEnrollments > 0) {
+            return R.error("该学生存在 " + refEnrollments + " 条活跃选课记录，无法停用", 400);
+        }
+
+        studentMapper.disableStudent(id);
+        return R.success("学生已停用");
+    }
+
+    @DeleteMapping("/students/{id}")
+    @ApiOperation("管理员-删除学生（仅当无选课记录时）")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "学生ID", required = true, paramType = "path"),
+            @ApiImplicitParam(name = "Authorization", value = "Bearer {token}", required = true, dataType = "string", paramType = "header")
+    })
+    public R<String> deleteStudent(
+            @PathVariable Integer id,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (requireAdmin(authHeader) == null) return R.error("未登录或非管理员", 401);
+        log.info("DELETE /admin/students/{}", id);
+
+        if (studentMapper.selectByIdForAdmin(id) == null) return R.error("学生不存在", 404);
+
+        int refEnrollments = studentMapper.countReferencedEnrollments(id);
+        if (refEnrollments > 0) {
+            return R.error("该学生存在 " + refEnrollments + " 条活跃选课记录，无法删除，请先停用", 400);
+        }
+
+        studentMapper.disableStudent(id);
+        return R.success("学生已删除");
+    }
+
+    // ==================== 教师管理 ====================
+
+    @GetMapping("/teachers")
+    @ApiOperation("管理员-查询教师列表（支持按院系/状态筛选）")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "departmentId", value = "院系ID（可选）", paramType = "query"),
+            @ApiImplicitParam(name = "status", value = "状态 1=正常 0=停用（可选）", paramType = "query"),
+            @ApiImplicitParam(name = "Authorization", value = "Bearer {token}", required = true, dataType = "string", paramType = "header")
+    })
+    public R<List<Map<String, Object>>> listTeachers(
+            @RequestParam(required = false) Integer departmentId,
+            @RequestParam(required = false) Integer status,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (requireAdmin(authHeader) == null) return R.error("未登录或非管理员", 401);
+        log.info("GET /admin/teachers: departmentId={}, status={}", departmentId, status);
+        List<Map<String, Object>> list = teacherMapper.selectAllForAdmin(departmentId, status);
+        return R.success(list, "成功");
+    }
+
+    @GetMapping("/teachers/{id}")
+    @ApiOperation("管理员-查询教师详情")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "教师ID", required = true, paramType = "path"),
+            @ApiImplicitParam(name = "Authorization", value = "Bearer {token}", required = true, dataType = "string", paramType = "header")
+    })
+    public R<Map<String, Object>> getTeacher(
+            @PathVariable Integer id,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (requireAdmin(authHeader) == null) return R.error("未登录或非管理员", 401);
+        log.info("GET /admin/teachers/{}", id);
+        Map<String, Object> teacher = teacherMapper.selectByIdForAdmin(id);
+        if (teacher == null) return R.error("教师不存在", 404);
+        return R.success(teacher, "成功");
+    }
+
+    @PostMapping("/teachers")
+    @ApiOperation("管理员-新增教师")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "Authorization", value = "Bearer {token}", required = true, dataType = "string", paramType = "header")
+    })
+    public R<Map<String, Object>> addTeacher(
+            @RequestBody Map<String, Object> body,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (requireAdmin(authHeader) == null) return R.error("未登录或非管理员", 401);
+        log.info("POST /admin/teachers: {}", body);
+
+        String teacherNo = (String) body.get("teacherNo");
+        String teacherName = (String) body.get("teacherName");
+        if (teacherNo == null || teacherNo.trim().isEmpty() || teacherName == null || teacherName.trim().isEmpty()) {
+            return R.error("工号和姓名不能为空", 400);
+        }
+        if (body.get("departmentId") == null) return R.error("院系不能为空", 400);
+        if (departmentMapper.selectById(toInt(body.get("departmentId"))) == null) return R.error("院系不存在", 400);
+        if (body.get("userId") == null) return R.error("用户ID不能为空", 400);
+
+        body.putIfAbsent("status", 1);
+        teacherMapper.insertTeacherAdmin(body);
+
+        Integer newId = toInt(body.get("teacherId"));
+        Map<String, Object> teacher = teacherMapper.selectByIdForAdmin(newId);
+        return R.success(teacher, "教师新增成功");
+    }
+
+    @PutMapping("/teachers/{id}")
+    @ApiOperation("管理员-修改教师")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "教师ID", required = true, paramType = "path"),
+            @ApiImplicitParam(name = "Authorization", value = "Bearer {token}", required = true, dataType = "string", paramType = "header")
+    })
+    public R<Map<String, Object>> updateTeacher(
+            @PathVariable Integer id,
+            @RequestBody Map<String, Object> body,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (requireAdmin(authHeader) == null) return R.error("未登录或非管理员", 401);
+        log.info("PUT /admin/teachers/{}: {}", id, body);
+
+        Map<String, Object> existing = teacherMapper.selectByIdForAdmin(id);
+        if (existing == null) return R.error("教师不存在", 404);
+
+        if (body.get("departmentId") != null && departmentMapper.selectById(toInt(body.get("departmentId"))) == null) {
+            return R.error("院系不存在", 400);
+        }
+
+        // 只更新前端传入的字段
+        for (Map.Entry<String, Object> entry : existing.entrySet()) {
+            body.putIfAbsent(entry.getKey(), entry.getValue());
+        }
+
+        body.put("teacherId", id);
+        teacherMapper.updateTeacherAdmin(body);
+
+        Map<String, Object> updated = teacherMapper.selectByIdForAdmin(id);
+        return R.success(updated, "教师修改成功");
+    }
+
+    @PutMapping("/teachers/{id}/disable")
+    @ApiOperation("管理员-停用教师")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "教师ID", required = true, paramType = "path"),
+            @ApiImplicitParam(name = "Authorization", value = "Bearer {token}", required = true, dataType = "string", paramType = "header")
+    })
+    public R<String> disableTeacher(
+            @PathVariable Integer id,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (requireAdmin(authHeader) == null) return R.error("未登录或非管理员", 401);
+        log.info("PUT /admin/teachers/{}/disable", id);
+
+        if (teacherMapper.selectByIdForAdmin(id) == null) return R.error("教师不存在", 404);
+
+        int refSections = teacherMapper.countReferencedSections(id);
+        if (refSections > 0) {
+            return R.error("该教师存在 " + refSections + " 个运行中的教学班，无法停用", 400);
+        }
+
+        teacherMapper.disableTeacher(id);
+        return R.success("教师已停用");
+    }
+
+    @DeleteMapping("/teachers/{id}")
+    @ApiOperation("管理员-删除教师（仅当无教学班时）")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "教师ID", required = true, paramType = "path"),
+            @ApiImplicitParam(name = "Authorization", value = "Bearer {token}", required = true, dataType = "string", paramType = "header")
+    })
+    public R<String> deleteTeacher(
+            @PathVariable Integer id,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (requireAdmin(authHeader) == null) return R.error("未登录或非管理员", 401);
+        log.info("DELETE /admin/teachers/{}", id);
+
+        if (teacherMapper.selectByIdForAdmin(id) == null) return R.error("教师不存在", 404);
+
+        int refSections = teacherMapper.countReferencedSections(id);
+        if (refSections > 0) {
+            return R.error("该教师存在 " + refSections + " 个运行中的教学班，无法删除，请先停用", 400);
+        }
+
+        teacherMapper.disableTeacher(id);
+        return R.success("教师已删除");
     }
 }
