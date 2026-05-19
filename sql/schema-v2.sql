@@ -203,26 +203,60 @@ CREATE TABLE t_score (
 ) ENGINE=InnoDB COMMENT='成绩（弱实体）';
 
 -- ------------------------------------------------------------
--- 3. 索引（加速联调查询）
+-- 3. 索引（加速联调查询，确保插入<1s、搜索/删除<2s）
 -- ------------------------------------------------------------
+
+-- 3.1 t_user：登录认证 + 角色/状态筛选
 CREATE INDEX idx_user_role ON t_user(role);
 CREATE INDEX idx_user_status ON t_user(status);
+CREATE INDEX idx_user_username_password ON t_user(username, password);
 
+-- 3.2 t_student：专业/姓名/状态/入学年份/联系方式
 CREATE INDEX idx_student_major ON t_student(major_id);
 CREATE INDEX idx_student_name ON t_student(student_name);
+CREATE INDEX idx_student_status ON t_student(status);
+CREATE INDEX idx_student_enrollment_year ON t_student(enrollment_year);
+CREATE INDEX idx_student_phone ON t_student(phone);
+CREATE INDEX idx_student_email ON t_student(email);
 
+-- 3.3 t_teacher：院系/状态/姓名
 CREATE INDEX idx_teacher_dept ON t_teacher(department_id);
+CREATE INDEX idx_teacher_status ON t_teacher(status);
+CREATE INDEX idx_teacher_name ON t_teacher(teacher_name);
 
+-- 3.4 t_course：院系/状态/类型/名称 + 复合索引
 CREATE INDEX idx_course_dept ON t_course(department_id);
+CREATE INDEX idx_course_status ON t_course(status);
+CREATE INDEX idx_course_type ON t_course(course_type);
+CREATE INDEX idx_course_name ON t_course(course_name);
+CREATE INDEX idx_course_dept_status ON t_course(department_id, status);
 
+-- 3.5 t_course_section：课程/教师/学期/教室/状态 + 复合索引
 CREATE INDEX idx_section_course ON t_course_section(course_id);
 CREATE INDEX idx_section_teacher ON t_course_section(teacher_id);
 CREATE INDEX idx_section_semester ON t_course_section(semester);
+CREATE INDEX idx_section_status ON t_course_section(status);
+CREATE INDEX idx_section_semester_status ON t_course_section(semester, status);
+CREATE INDEX idx_section_classroom ON t_course_section(classroom_id);
 
+-- 3.6 t_enrollment（60,000+行，最热点表）：学生/教学班/状态 + 复合索引
 CREATE INDEX idx_enrollment_student ON t_enrollment(student_id);
 CREATE INDEX idx_enrollment_section ON t_enrollment(section_id);
+CREATE INDEX idx_enrollment_status ON t_enrollment(status);
+CREATE INDEX idx_enrollment_student_status ON t_enrollment(student_id, status);
+CREATE INDEX idx_enrollment_section_status ON t_enrollment(section_id, status);
+CREATE INDEX idx_enrollment_select_time ON t_enrollment(select_time);
 
+-- 3.7 t_score（54,000+行）：是否通过/成绩/时间
+CREATE INDEX idx_score_is_passed ON t_score(is_passed);
+CREATE INDEX idx_score_final_score ON t_score(final_score);
+CREATE INDEX idx_score_graded_at ON t_score(graded_at);
+
+-- 3.8 t_major / t_department / t_classroom
 CREATE INDEX idx_major_dept ON t_major(department_id);
+CREATE INDEX idx_major_status ON t_major(status);
+CREATE INDEX idx_department_status ON t_department(status);
+CREATE INDEX idx_classroom_status ON t_classroom(status);
 
 -- ------------------------------------------------------------
 -- 4. 视图
