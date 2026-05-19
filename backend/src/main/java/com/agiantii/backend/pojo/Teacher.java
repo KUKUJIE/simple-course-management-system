@@ -12,6 +12,27 @@ public class Teacher {
     @TableId(value = "teacher_id", type = IdType.AUTO)
     private Integer teacherId;
 
+    @TableField("user_id")
+    private Integer userId;
+
+    @TableField("department_id")
+    private Integer departmentId;
+
+    @TableField("teacher_no")
+    private String teacherNo;
+
     @TableField("teacher_name")
     private String teacherName;
+
+    @TableField("title")
+    private String title;
+
+    @TableField("phone")
+    private String phone;
+
+    @TableField("email")
+    private String email;
+
+    @TableField("status")
+    private Integer status;
 }
