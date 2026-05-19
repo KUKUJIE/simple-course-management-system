@@ -51,7 +51,7 @@
         </el-form-item>
         <el-form-item label="教室" prop="classroomId">
           <el-select v-model="formData.classroomId" placeholder="请选择教室" style="width: 100%" filterable>
-            <el-option v-for="r in classroomOptions" :key="r.classroomId" :label="r.classroomName" :value="r.classroomId" />
+            <el-option v-for="r in classroomOptions" :key="r.classroomId" :label="`${r.building||''}${r.roomNo||''}`" :value="r.classroomId" />
           </el-select>
         </el-form-item>
         <el-form-item label="学期" prop="semester">
