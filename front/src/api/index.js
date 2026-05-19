@@ -36,16 +36,12 @@ class ReuqestHttp {
             response => {
                 // 对响应数据做处理，例如只返回data部分
                 const res = response
-                // 如果返回的状态码为200，说明成功，可以直接返回数据
+                // 如果返回的HTTP状态码为200，说明网络请求成功，返回后端body
                 if (res.status === 200) {
                     return res.data
                 } else {
                     // 其他状态码都当作错误处理
-                    // 可以在这里对不同的错误码进行不同处理
-                    return Promise.reject({
-                        message: res.message || 'Error',
-                        status: res.code
-                    });
+                    return Promise.reject(res.data || { status: res.status, msg: 'Error' })
                 }
             },
             error => {

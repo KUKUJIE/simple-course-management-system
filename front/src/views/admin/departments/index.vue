@@ -65,7 +65,7 @@ const fetchData = async () => {
   loading.value = true
   try {
     const res = await adminNewApi.getDepartmentList()
-    if (res?.code === 200) tableData.value = res.data || []
+    if (res?.status === 200) tableData.value = res.data || []
     else ElMessage.error(res?.msg || '获取失败')
   } catch (e) { ElMessage.error('获取院系列表失败') }
   finally { loading.value = false }
@@ -84,7 +84,7 @@ const handleDisable = async (row) => {
   try {
     await ElMessageBox.confirm(`确定停用院系「${row.departmentName}」？`, '停用确认', { type: 'warning' })
     const res = await adminNewApi.disableDepartment(row.departmentId)
-    if (res?.code === 200) { ElMessage.success('停用成功'); fetchData() }
+    if (res?.status === 200) { ElMessage.success('停用成功'); fetchData() }
     else ElMessage.error(res?.msg || '停用失败')
   } catch {}
 }
@@ -97,7 +97,7 @@ const handleSubmit = async () => {
     let res
     if (dialogType.value === 'add') res = await adminNewApi.addDepartment(payload)
     else res = await adminNewApi.updateDepartment(formData.departmentId, payload)
-    if (res?.code === 200) { ElMessage.success(res.msg || '保存成功'); dialogVisible.value = false; fetchData() }
+    if (res?.status === 200) { ElMessage.success(res.msg || '保存成功'); dialogVisible.value = false; fetchData() }
     else ElMessage.error(res?.msg || '保存失败')
   } catch (e) { ElMessage.error('保存失败') }
   finally { submitting.value = false }

@@ -10,7 +10,9 @@
     <el-card class="data-card" v-loading="loading">
       <el-table :data="filteredData" style="width: 100%" empty-text="暂无教室数据">
         <el-table-column prop="classroomId" label="编号" min-width="100" align="center" />
-        <el-table-column prop="classroomName" label="教室名称" min-width="200" />
+        <el-table-column label="教室名称" min-width="200">
+          <template #default="{ row }">{{ row.building }}{{ row.roomNo }}</template>
+        </el-table-column>
         <el-table-column prop="capacity" label="容量" min-width="120" align="center" />
         <el-table-column label="状态" min-width="80" align="center">
           <template #default="{ row }">
@@ -28,8 +30,11 @@
 
     <el-dialog v-model="dialogVisible" :title="dialogType === 'add' ? '新增教室' : '编辑教室'" width="500px" @close="resetForm">
       <el-form ref="formRef" :model="formData" :rules="rules" label-width="80px">
-        <el-form-item label="教室名称" prop="classroomName">
-          <el-input v-model="formData.classroomName" placeholder="请输入教室名称" />
+        <el-form-item label="教学楼" prop="building">
+          <el-input v-model="formData.building" placeholder="请输入教学楼" />
+        </el-form-item>
+        <el-form-item label="房间号" prop="roomNo">
+          <el-input v-model="formData.roomNo" placeholder="请输入房间号" />
         </el-form-item>
         <el-form-item label="容量" prop="capacity">
           <el-input-number v-model="formData.capacity" :min="1" :max="999" style="width: 100%" />
@@ -56,43 +61,45 @@ import { adminNewApi } from '@/api/new-api'
 
 const loading = ref(false), submitting = ref(false), dialogVisible = ref(false), dialogType = ref('add')
 const formRef = ref(null), searchKeyword = ref(''), tableData = ref([])
-const formData = reactive({ classroomId: null, classroomName: '', capacity: 60, status: 1 })
+const formData = reactive({ classroomId: null, building: '', roomNo: '', capacity: 60, status: 1 })
 const rules = {
-  classroomName: [{ required: true, message: '请输入教室名称', trigger: 'blur' }],
+  building: [{ required: true, message: '请输入教学楼', trigger: 'blur' }],
+  roomNo: [{ required: true, message: '请输入房间号', trigger: 'blur' }],
   capacity: [{ required: true, message: '请输入容量', trigger: 'blur' }]
 }
 
 const filteredData = computed(() => {
   if (!searchKeyword.value) return tableData.value
   const kw = searchKeyword.value.toLowerCase()
-  return tableData.value.filter(r => (r.classroomName || '').toLowerCase().includes(kw))
+  return tableData.value.filter(r => ((r.building||'')+(r.roomNo||'')).toLowerCase().includes(kw))
 })
 
 const fetchData = async () => {
   loading.value = true
   try {
     const res = await adminNewApi.getClassroomList()
-    if (res?.code === 200) tableData.value = res.data || []
+    if (res?.status === 200) tableData.value = res.data || []
     else ElMessage.error(res?.msg || '获取失败')
   } catch (e) { ElMessage.error('获取教室列表失败') }
   finally { loading.value = false }
 }
 
-const resetForm = () => { formRef.value?.resetFields(); Object.assign(formData, { classroomId: null, classroomName: '', capacity: 60, status: 1 }) }
+const resetForm = () => { formRef.value?.resetFields(); Object.assign(formData, { classroomId: null, building: '', roomNo: '', capacity: 60, status: 1 }) }
 const handleAdd = () => { dialogType.value = 'add'; resetForm(); dialogVisible.value = true }
 const handleEdit = async (row) => {
   dialogType.value = 'edit'
   formData.classroomId = row.classroomId
-  formData.classroomName = row.classroomName
+  formData.building = row.building || ''
+  formData.roomNo = row.roomNo || ''
   formData.capacity = row.capacity || 60
   formData.status = row.status
   dialogVisible.value = true
 }
 const handleDisable = async (row) => {
   try {
-    await ElMessageBox.confirm(`确定停用教室「${row.classroomName}」？`, '停用确认', { type: 'warning' })
+    await ElMessageBox.confirm(`确定停用教室「${(row.building||'')+(row.roomNo||'')}」？`, '停用确认', { type: 'warning' })
     const res = await adminNewApi.disableClassroom(row.classroomId)
-    if (res?.code === 200) { ElMessage.success('停用成功'); fetchData() }
+    if (res?.status === 200) { ElMessage.success('停用成功'); fetchData() }
     else ElMessage.error(res?.msg || '停用失败')
   } catch {}
 }
@@ -101,11 +108,11 @@ const handleSubmit = async () => {
   try { await formRef.value.validate() } catch { return }
   submitting.value = true
   try {
-    const payload = { classroomName: formData.classroomName, capacity: formData.capacity, status: formData.status }
+    const payload = { building: formData.building, roomNo: formData.roomNo, capacity: formData.capacity, status: formData.status }
     let res
     if (dialogType.value === 'add') res = await adminNewApi.addClassroom(payload)
     else res = await adminNewApi.updateClassroom(formData.classroomId, payload)
-    if (res?.code === 200) { ElMessage.success(res.msg || '保存成功'); dialogVisible.value = false; fetchData() }
+    if (res?.status === 200) { ElMessage.success(res.msg || '保存成功'); dialogVisible.value = false; fetchData() }
     else ElMessage.error(res?.msg || '保存失败')
   } catch (e) { ElMessage.error('保存失败') }
   finally { submitting.value = false }

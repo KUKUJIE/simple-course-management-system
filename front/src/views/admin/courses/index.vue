@@ -81,7 +81,7 @@ const fetchData = async () => {
   loading.value = true
   try {
     const res = await adminNewApi.getCourseList()
-    if (res?.code === 200) tableData.value = res.data || []
+    if (res?.status === 200) tableData.value = res.data || []
     else ElMessage.error(res?.msg || '获取课程列表失败')
   } catch (e) { ElMessage.error('获取课程列表失败') }
   finally { loading.value = false }
@@ -102,7 +102,7 @@ const handleDisable = async (row) => {
   try {
     await ElMessageBox.confirm(`确定停用课程「${row.name}」？`, '停用确认', { type: 'warning' })
     const res = await adminNewApi.disableCourse(row.id)
-    if (res?.code === 200) { ElMessage.success('课程已停用'); fetchData() }
+    if (res?.status === 200) { ElMessage.success('课程已停用'); fetchData() }
     else ElMessage.error(res?.msg || '停用失败')
   } catch {}
 }
@@ -115,7 +115,7 @@ const handleSubmit = async () => {
     let res
     if (dialogType.value === 'add') res = await adminNewApi.addCourse(payload)
     else res = await adminNewApi.updateCourse(formData.id, payload)
-    if (res?.code === 200) { ElMessage.success(res.msg || '保存成功'); dialogVisible.value = false; fetchData() }
+    if (res?.status === 200) { ElMessage.success(res.msg || '保存成功'); dialogVisible.value = false; fetchData() }
     else ElMessage.error(res?.msg || '保存失败')
   } catch (e) { ElMessage.error('保存失败') }
   finally { submitting.value = false }

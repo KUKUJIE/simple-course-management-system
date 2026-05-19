@@ -116,12 +116,12 @@ const fetchStats = async () => {
       adminNewApi.getCourseList(),
       adminNewApi.getSectionList()
     ])
-    if (coursesRes?.code === 200) {
+    if (coursesRes?.status === 200) {
       const courses = Array.isArray(coursesRes.data) ? coursesRes.data : []
       stats.totalCourses = courses.length
       stats.activeCourses = courses.filter(c => c.status === 1).length
     }
-    if (sectionsRes?.code === 200) {
+    if (sectionsRes?.status === 200) {
       const sections = Array.isArray(sectionsRes.data) ? sectionsRes.data : []
       // sections 数据已通过 getSectionList 获取，可用于后续扩展
     }

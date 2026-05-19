@@ -20,7 +20,7 @@
         <el-table-column prop="courseName" label="课程名" min-width="160" />
         <el-table-column prop="teacherName" label="教师名" min-width="100" />
         <el-table-column prop="classroomName" label="教室名" min-width="120" />
-        <el-table-column prop="term" label="学期" min-width="120" align="center" />
+        <el-table-column prop="semester" label="学期" min-width="120" align="center" />
         <el-table-column prop="capacityLimit" label="容量" min-width="80" align="center" />
         <el-table-column prop="selectedCount" label="已选" min-width="70" align="center" />
         <el-table-column label="状态" min-width="80" align="center">
@@ -54,8 +54,8 @@
             <el-option v-for="r in classroomOptions" :key="r.classroomId" :label="r.classroomName" :value="r.classroomId" />
           </el-select>
         </el-form-item>
-        <el-form-item label="学期" prop="term">
-          <el-input v-model="formData.term" placeholder="如 2025-2026-1" />
+        <el-form-item label="学期" prop="semester">
+          <el-input v-model="formData.semester" placeholder="如 2025-2026-1" />
         </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
@@ -101,14 +101,14 @@ const classroomOptions = ref([])
 
 const formData = reactive({
   sectionId: null, courseId: null, teacherId: null, classroomId: null,
-  term: '', capacityLimit: 30, status: 1
+  semester: '', capacityLimit: 30, status: 1
 })
 
 const rules = {
   courseId: [{ required: true, message: '请选择课程', trigger: 'change' }],
   teacherId: [{ required: true, message: '请选择教师', trigger: 'change' }],
   classroomId: [{ required: true, message: '请选择教室', trigger: 'change' }],
-  term: [{ required: true, message: '请输入学期', trigger: 'blur' }],
+  semester: [{ required: true, message: '请输入学期', trigger: 'blur' }],
   capacityLimit: [{ required: true, message: '请输入容量', trigger: 'blur' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }]
 }
@@ -132,9 +132,9 @@ const loadOptions = async () => {
       adminNewApi.getTeacherOptions(),
       adminNewApi.getClassroomOptions()
     ])
-    if (cRes?.code === 200) courseOptions.value = cRes.data || []
-    if (tRes?.code === 200) teacherOptions.value = tRes.data || []
-    if (rRes?.code === 200) classroomOptions.value = rRes.data || []
+    if (cRes?.status === 200) courseOptions.value = cRes.data || []
+    if (tRes?.status === 200) teacherOptions.value = tRes.data || []
+    if (rRes?.status === 200) classroomOptions.value = rRes.data || []
   } catch (e) { console.error('加载下拉选项失败:', e) }
 }
 
@@ -142,7 +142,7 @@ const fetchData = async () => {
   try {
     loading.value = true
     const res = await adminNewApi.getSectionList()
-    if (res?.code === 200) tableData.value = res.data || []
+    if (res?.status === 200) tableData.value = res.data || []
     else ElMessage.error(res?.msg || '获取教学班列表失败')
   } catch (e) {
     console.error('获取教学班列表失败:', e)
@@ -152,7 +152,7 @@ const fetchData = async () => {
 
 const resetForm = () => {
   formRef.value?.resetFields()
-  Object.assign(formData, { sectionId: null, courseId: null, teacherId: null, classroomId: null, term: '', capacityLimit: 30, status: 1 })
+  Object.assign(formData, { sectionId: null, courseId: null, teacherId: null, classroomId: null, semester: '', capacityLimit: 30, status: 1 })
 }
 
 const handleAdd = () => { dialogType.value = 'add'; resetForm(); dialogVisible.value = true }
@@ -160,14 +160,14 @@ const handleAdd = () => { dialogType.value = 'add'; resetForm(); dialogVisible.v
 const handleEdit = async (row) => {
   try {
     const res = await adminNewApi.getSectionById(row.sectionId)
-    if (res?.code === 200) {
+    if (res?.status === 200) {
       const d = res.data
       dialogType.value = 'edit'
       formData.sectionId = d.sectionId
       formData.courseId = d.courseId
       formData.teacherId = d.teacherId
       formData.classroomId = d.classroomId
-      formData.term = d.term || ''
+      formData.semester = d.semester || ''
       formData.capacityLimit = d.capacityLimit || 30
       formData.status = d.status
       dialogVisible.value = true
@@ -179,7 +179,7 @@ const handleClose = async (row) => {
   try {
     await ElMessageBox.confirm(`确定关闭教学班「${row.courseName || row.sectionCode}」？关闭后学生将无法选课。`, '关闭确认', { type: 'warning' })
     const res = await adminNewApi.closeSection(row.sectionId)
-    if (res?.code === 200) { ElMessage.success('关闭成功'); fetchData() }
+    if (res?.status === 200) { ElMessage.success('关闭成功'); fetchData() }
     else ElMessage.error(res?.msg || '关闭失败')
   } catch {}
 }
@@ -193,7 +193,7 @@ const handleSubmit = async () => {
       courseId: formData.courseId,
       teacherId: formData.teacherId,
       classroomId: formData.classroomId,
-      term: formData.term,
+      semester: formData.semester,
       capacityLimit: formData.capacityLimit,
       status: formData.status
     }
@@ -203,7 +203,7 @@ const handleSubmit = async () => {
     } else {
       res = await adminNewApi.updateSection(formData.sectionId, payload)
     }
-    if (res?.code === 200) {
+    if (res?.status === 200) {
       ElMessage.success(dialogType.value === 'add' ? '新增成功' : '修改成功')
       dialogVisible.value = false
       fetchData()
