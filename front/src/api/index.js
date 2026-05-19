@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { compile } from 'vue';
 
 // 创建axios实例
 
@@ -65,6 +64,9 @@ class ReuqestHttp {
     }
     post(url, data, headers) {
         return this.service.post(url, data, headers)
+    }
+    put(url, data, headers) {
+        return this.service.put(url, data, headers)
     }
     delete(url, headers) {
         return this.service.delete(url, headers)

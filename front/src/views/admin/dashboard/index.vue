@@ -111,20 +111,27 @@ const recentActivities = ref([
 // 获取统计数据
 const fetchStats = async () => {
   try {
-    // 获取教学班汇总数据
-    const sectionsRes = await adminNewApi.getAllSections()
-    if (sectionsRes && (sectionsRes.code === 200 || sectionsRes.status === 200)) {
-      const sections = sectionsRes.data?.list || sectionsRes.data || []
-      stats.totalCourses = sections.length
-      stats.activeCourses = sections.length
-      // TODO: 后续接入统计接口
-      stats.totalStudents = 0
-      stats.totalTeachers = 0
+    // 使用已有 API 获取课程和教学班数量
+    const [coursesRes, sectionsRes] = await Promise.all([
+      adminNewApi.getCourseList(),
+      adminNewApi.getSectionList()
+    ])
+    if (coursesRes?.code === 200) {
+      const courses = Array.isArray(coursesRes.data) ? coursesRes.data : []
+      stats.totalCourses = courses.length
+      stats.activeCourses = courses.filter(c => c.status === 1).length
     }
+    if (sectionsRes?.code === 200) {
+      const sections = Array.isArray(sectionsRes.data) ? sectionsRes.data : []
+      // sections 数据已通过 getSectionList 获取，可用于后续扩展
+    }
+    // 学生/教师统计留待第二阶段接入
+    stats.totalStudents = 0
     stats.newStudents = 0
+    stats.totalTeachers = 0
     stats.newTeachers = 0
 
-    // TODO: 获取成绩统计数据
+    // 成绩统计留待第二阶段接入
     stats.averageScore = 85.5
     stats.passRate = 95.5
 
