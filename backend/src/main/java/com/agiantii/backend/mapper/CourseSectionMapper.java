@@ -58,7 +58,8 @@ public interface CourseSectionMapper {
 
     // ======== 管理员端教学班管理方法 ========
 
-    @Select("SELECT cs.section_id AS sectionId, cs.section_code AS sectionCode, cs.semester, " +
+    @Select("<script>" +
+            "SELECT cs.section_id AS sectionId, cs.section_code AS sectionCode, cs.semester, " +
             "cs.course_id AS courseId, c.course_name AS courseName, " +
             "cs.teacher_id AS teacherId, t.teacher_name AS teacherName, " +
             "cs.classroom_id AS classroomId, CONCAT(cr.building, ' ', cr.room_no) AS classroomName, " +
@@ -68,8 +69,16 @@ public interface CourseSectionMapper {
             "JOIN t_course c ON cs.course_id = c.course_id " +
             "JOIN t_teacher t ON cs.teacher_id = t.teacher_id " +
             "LEFT JOIN t_classroom cr ON cs.classroom_id = cr.classroom_id " +
-            "ORDER BY cs.semester DESC, cs.section_id")
-    List<Map<String, Object>> selectAllForAdmin();
+            "WHERE 1=1 " +
+            "<if test='courseId != null'> AND cs.course_id = #{courseId}</if>" +
+            "<if test='teacherId != null'> AND cs.teacher_id = #{teacherId}</if>" +
+            "<if test='status != null'> AND cs.status = #{status}</if>" +
+            "ORDER BY cs.semester DESC, cs.section_id" +
+            "</script>")
+    List<Map<String, Object>> selectAllForAdmin(
+            @Param("courseId") Integer courseId,
+            @Param("teacherId") Integer teacherId,
+            @Param("status") Integer status);
 
     @Select("SELECT cs.section_id AS sectionId, cs.section_code AS sectionCode, cs.semester, " +
             "cs.course_id AS courseId, c.course_name AS courseName, " +

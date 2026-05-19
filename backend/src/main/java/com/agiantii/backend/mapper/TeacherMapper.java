@@ -79,4 +79,12 @@ public interface TeacherMapper {
 
     @Select("SELECT COUNT(*) FROM t_course_section WHERE teacher_id = #{teacherId} AND status = 1")
     int countReferencedSections(@Param("teacherId") Integer teacherId);
+
+    /** 查询指定前缀的最大序号，用于生成工号 */
+    @Select("SELECT MAX(CAST(SUBSTRING(teacher_no, LENGTH(#{prefix})+1) AS UNSIGNED)) FROM t_teacher WHERE teacher_no LIKE CONCAT(#{prefix}, '%')")
+    Integer selectMaxSeqByPrefix(@Param("prefix") String prefix);
+
+    /** 根据 teacher_id 查询 user_id（用于停用同步） */
+    @Select("SELECT user_id FROM t_teacher WHERE teacher_id = #{teacherId}")
+    Integer selectUserIdByTeacherId(@Param("teacherId") Integer teacherId);
 }

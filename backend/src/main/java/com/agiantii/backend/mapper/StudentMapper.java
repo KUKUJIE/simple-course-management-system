@@ -73,4 +73,12 @@ public interface StudentMapper {
 
     @Select("SELECT COUNT(*) FROM t_enrollment WHERE student_id = #{studentId} AND status = 1")
     int countReferencedEnrollments(@Param("studentId") Integer studentId);
+
+    /** 查询指定前缀的最大序号，用于生成学号 */
+    @Select("SELECT MAX(CAST(SUBSTRING(student_no, LENGTH(#{prefix})+1) AS UNSIGNED)) FROM t_student WHERE student_no LIKE CONCAT(#{prefix}, '%')")
+    Integer selectMaxSeqByPrefix(@Param("prefix") String prefix);
+
+    /** 根据 student_id 查询 user_id（用于停用同步） */
+    @Select("SELECT user_id FROM t_student WHERE student_id = #{studentId}")
+    Integer selectUserIdByStudentId(@Param("studentId") Integer studentId);
 }

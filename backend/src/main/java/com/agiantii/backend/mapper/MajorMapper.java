@@ -10,13 +10,13 @@ import java.util.Map;
 public interface MajorMapper {
 
     @Select("SELECT m.major_id, m.department_id, m.major_code, m.major_name, m.status, " +
-            "d.department_name " +
+            "d.department_name, d.department_code AS departmentCode " +
             "FROM t_major m LEFT JOIN t_department d ON m.department_id = d.department_id " +
             "ORDER BY m.major_id")
     List<Map<String, Object>> selectAllWithDept();
 
     @Select("SELECT m.major_id, m.department_id, m.major_code, m.major_name, m.status, " +
-            "d.department_name " +
+            "d.department_name, d.department_code AS departmentCode " +
             "FROM t_major m LEFT JOIN t_department d ON m.department_id = d.department_id " +
             "WHERE m.major_id = #{majorId}")
     Map<String, Object> selectByIdWithDept(@Param("majorId") Integer majorId);
