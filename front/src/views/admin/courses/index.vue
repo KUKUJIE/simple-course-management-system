@@ -130,4 +130,5 @@ onMounted(fetchData)
 .page-header { margin-bottom: 20px; h2 { margin: 0; font-size: 20px; font-weight: 600; color: var(--el-text-color-primary); } }
 .action-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
 .data-card { border: 1px solid var(--el-border-color-darker); }
+:deep(.el-select) { --el-fill-color-blank: var(--input-bg, #313346); }
 </style>

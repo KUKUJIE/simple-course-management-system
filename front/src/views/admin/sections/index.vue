@@ -32,13 +32,17 @@
           <template #default="{ row }">
             <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
             <el-button v-if="row.status === 1" type="warning" link @click="handleClose(row)">关闭</el-button>
+            <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="dialogType === 'add' ? '新增教学班' : '编辑教学班'" width="600px" @close="resetForm">
-      <el-form ref="formRef" :model="formData" :rules="rules" label-width="80px">
+      <el-form ref="formRef" :model="formData" :rules="rules" label-width="100px">
+        <el-form-item v-if="dialogType === 'add'" label="教学班编码" prop="sectionCode">
+          <el-input v-model="formData.sectionCode" placeholder="请输入唯一的教学班编码，如 SEC-2025-001" maxlength="50" />
+        </el-form-item>
         <el-form-item label="课程" prop="courseId">
           <el-select v-model="formData.courseId" placeholder="请选择课程" style="width: 100%" filterable>
             <el-option v-for="c in courseOptions" :key="c.id || c.courseId" :label="c.name || c.courseName" :value="c.id || c.courseId" />
@@ -100,11 +104,12 @@ const teacherOptions = ref([])
 const classroomOptions = ref([])
 
 const formData = reactive({
-  sectionId: null, courseId: null, teacherId: null, classroomId: null,
+  sectionId: null, sectionCode: '', courseId: null, teacherId: null, classroomId: null,
   semester: '', capacityLimit: 30, status: 1
 })
 
 const rules = {
+  sectionCode: [{ required: true, message: '请输入教学班编码', trigger: 'blur' }],
   courseId: [{ required: true, message: '请选择课程', trigger: 'change' }],
   teacherId: [{ required: true, message: '请选择教师', trigger: 'change' }],
   classroomId: [{ required: true, message: '请选择教室', trigger: 'change' }],
@@ -152,7 +157,7 @@ const fetchData = async () => {
 
 const resetForm = () => {
   formRef.value?.resetFields()
-  Object.assign(formData, { sectionId: null, courseId: null, teacherId: null, classroomId: null, semester: '', capacityLimit: 30, status: 1 })
+  Object.assign(formData, { sectionId: null, sectionCode: '', courseId: null, teacherId: null, classroomId: null, semester: '', capacityLimit: 30, status: 1 })
 }
 
 const handleAdd = () => { dialogType.value = 'add'; resetForm(); dialogVisible.value = true }
@@ -184,6 +189,15 @@ const handleClose = async (row) => {
   } catch {}
 }
 
+const handleDelete = async (row) => {
+  try {
+    await ElMessageBox.confirm(`确定删除教学班「${row.courseName || row.sectionCode}」？`, '删除确认', { type: 'warning' })
+    const res = await adminNewApi.deleteSection(row.sectionId)
+    if (res?.status === 200) { ElMessage.success('删除成功'); fetchData() }
+    else ElMessage.error(res?.msg || '删除失败')
+  } catch {}
+}
+
 const handleSubmit = async () => {
   if (!formRef.value) return
   try { await formRef.value.validate() } catch { return }
@@ -196,6 +210,9 @@ const handleSubmit = async () => {
       semester: formData.semester,
       capacityLimit: formData.capacityLimit,
       status: formData.status
+    }
+    if (dialogType.value === 'add') {
+      payload.sectionCode = formData.sectionCode
     }
     let res
     if (dialogType.value === 'add') {
@@ -224,4 +241,5 @@ onMounted(() => { loadOptions(); fetchData() })
 .page-header { margin-bottom: 20px; h2 { margin: 0; font-size: 20px; font-weight: 600; color: var(--el-text-color-primary); } }
 .search-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
 .data-card { border: 1px solid var(--el-border-color-darker); }
+:deep(.el-select) { --el-fill-color-blank: var(--input-bg, #313346); }
 </style>

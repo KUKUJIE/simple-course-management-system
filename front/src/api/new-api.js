@@ -179,6 +179,9 @@ export const adminNewApi = {
   async closeSection(id) {
     return http.put(`/api/admin/sections/${id}/close`)
   },
+  async deleteSection(id) {
+    return http.delete(`/api/admin/sections/${id}`)
+  },
 
   // ======================== 院系管理 ========================
 
@@ -232,6 +235,63 @@ export const adminNewApi = {
   },
   async disableClassroom(id) {
     return http.put(`/api/admin/classrooms/${id}/disable`)
+  },
+
+  // ======================== 学生管理 ========================
+
+  async getStudentList(params = {}) {
+    return http.get('/api/admin/students', params)
+  },
+  async getStudentById(id) {
+    return http.get(`/api/admin/students/${id}`)
+  },
+  async getNextStudentNo(majorId, year) {
+    return http.get('/api/admin/students/next-no', { majorId, year })
+  },
+  async addStudent(data) {
+    return http.post('/api/admin/students', data)
+  },
+  async updateStudent(id, data) {
+    return http.put(`/api/admin/students/${id}`, data)
+  },
+  async disableStudent(id) {
+    return http.put(`/api/admin/students/${id}/disable`)
+  },
+  async deleteStudent(id) {
+    return http.delete(`/api/admin/students/${id}`)
+  },
+
+  // ======================== 教师管理 ========================
+
+  async getTeacherList(params = {}) {
+    return http.get('/api/admin/teachers', params)
+  },
+  async getTeacherById(id) {
+    return http.get(`/api/admin/teachers/${id}`)
+  },
+  async getNextTeacherNo(departmentId, year) {
+    return http.get('/api/admin/teachers/next-no', { departmentId, year })
+  },
+  async addTeacher(data) {
+    return http.post('/api/admin/teachers', data)
+  },
+  async updateTeacher(id, data) {
+    return http.put(`/api/admin/teachers/${id}`, data)
+  },
+  async disableTeacher(id) {
+    return http.put(`/api/admin/teachers/${id}/disable`)
+  },
+  async deleteTeacher(id) {
+    return http.delete(`/api/admin/teachers/${id}`)
+  },
+
+  // ======================== 下拉选项补充 ========================
+
+  async getMajorOptions() {
+    return http.get('/api/admin/majors/options')
+  },
+  async getDepartmentOptions() {
+    return http.get('/api/admin/departments/options')
   }
 }
 
