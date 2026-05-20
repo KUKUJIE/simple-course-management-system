@@ -110,6 +110,13 @@ public class AdminApiController {
         body.putIfAbsent("totalHours", 48);
         body.putIfAbsent("courseType", "必修");
         body.putIfAbsent("departmentId", 1);
+
+        // 校验 departmentId 存在
+        Integer deptId = toInt(body.get("departmentId"));
+        if (departmentMapper.selectById(deptId) == null) {
+            return R.error("所属院系不存在", 400);
+        }
+
         courseMapper.insertCourse(body);
 
         Integer newId = toInt(body.get("id"));
@@ -132,6 +139,14 @@ public class AdminApiController {
 
         Map<String, Object> existing = courseMapper.selectByIdForAdmin(id);
         if (existing == null) return R.error("课程不存在", 404);
+
+        // 校验 departmentId（如果前端传入）
+        if (body.get("departmentId") != null) {
+            Integer deptId = toInt(body.get("departmentId"));
+            if (departmentMapper.selectById(deptId) == null) {
+                return R.error("所属院系不存在", 400);
+            }
+        }
 
         // 只更新前端传入的字段，未传字段从已有记录回填
         for (Map.Entry<String, Object> entry : existing.entrySet()) {
@@ -221,6 +236,17 @@ public class AdminApiController {
         String msg = validateSection(body, null);
         if (msg != null) return R.error(msg, 400);
 
+        // 自动生成 sectionCode（前端未传时，格式: {courseCode}-{NN}）
+        String sectionCode = (String) body.get("sectionCode");
+        if (sectionCode == null || sectionCode.trim().isEmpty()) {
+            Integer courseId = toInt(body.get("courseId"));
+            Map<String, Object> course = courseMapper.selectByIdForAdmin(courseId);
+            String courseCode = (String) course.get("courseCode");
+            Integer maxSeq = courseSectionMapper.selectMaxSectionSeqByCourseId(courseId, courseCode);
+            sectionCode = courseCode + "-" + String.format("%02d", maxSeq + 1);
+            body.put("sectionCode", sectionCode);
+        }
+
         body.putIfAbsent("status", 1);
         body.putIfAbsent("selectedCount", 0);
         courseSectionMapper.insertSection(body);
@@ -300,7 +326,7 @@ public class AdminApiController {
             return R.error("该教学班存在 " + enrolled + " 条活跃选课记录，无法删除", 400);
         }
 
-        courseSectionMapper.closeSection(id);
+        courseSectionMapper.deleteSectionById(id);
         return R.success("教学班已删除");
     }
 
@@ -318,9 +344,17 @@ public class AdminApiController {
         Integer teacherId = toInt(teacherIdObj);
         Integer classroomId = toInt(classroomIdObj);
 
-        if (courseMapper.selectByIdForAdmin(courseId) == null) return "课程不存在";
-        if (teacherMapper.selectByTeacherId(teacherId) == null) return "教师不存在";
-        if (classroomMapper.selectById(classroomId) == null) return "教室不存在";
+        Map<String, Object> course = courseMapper.selectByIdForAdmin(courseId);
+        if (course == null) return "课程不存在";
+        if (!Integer.valueOf(1).equals(course.get("status"))) return "课程已停用，无法创建教学班";
+
+        Map<String, Object> teacher = teacherMapper.selectByIdForAdmin(teacherId);
+        if (teacher == null) return "教师不存在";
+        if (!Integer.valueOf(1).equals(teacher.get("status"))) return "教师已停用，无法创建教学班";
+
+        com.agiantii.backend.pojo.Classroom classroom = classroomMapper.selectById(classroomId);
+        if (classroom == null) return "教室不存在";
+        if (!Integer.valueOf(1).equals(classroom.getStatus())) return "教室已停用，无法创建教学班";
 
         // capacity > 0
         Object capObj = body.getOrDefault("capacityLimit", existing != null ? existing.get("capacityLimit") : null);
@@ -870,6 +904,7 @@ public class AdminApiController {
         return R.success(updated, "学生修改成功");
     }
 
+    @Transactional
     @PutMapping("/students/{id}/disable")
     @ApiOperation("管理员-停用学生")
     @ApiImplicitParams({
@@ -895,6 +930,7 @@ public class AdminApiController {
         return R.success("学生已停用");
     }
 
+    @Transactional
     @DeleteMapping("/students/{id}")
     @ApiOperation("管理员-删除学生（仅当无选课记录时）")
     @ApiImplicitParams({
@@ -914,9 +950,9 @@ public class AdminApiController {
             return R.error("该学生存在 " + refEnrollments + " 条活跃选课记录，无法删除，请先停用", 400);
         }
 
-        studentMapper.disableStudent(id);
         Integer userId = studentMapper.selectUserIdByStudentId(id);
-        if (userId != null) userMapper.disableUser(userId);
+        studentMapper.deleteStudentById(id);
+        if (userId != null) userMapper.deleteUserNyId(userId);
         return R.success("学生已删除");
     }
 
@@ -1069,6 +1105,7 @@ public class AdminApiController {
         return R.success(updated, "教师修改成功");
     }
 
+    @Transactional
     @PutMapping("/teachers/{id}/disable")
     @ApiOperation("管理员-停用教师")
     @ApiImplicitParams({
@@ -1094,6 +1131,7 @@ public class AdminApiController {
         return R.success("教师已停用");
     }
 
+    @Transactional
     @DeleteMapping("/teachers/{id}")
     @ApiOperation("管理员-删除教师（仅当无教学班时）")
     @ApiImplicitParams({
@@ -1113,9 +1151,9 @@ public class AdminApiController {
             return R.error("该教师存在 " + refSections + " 个运行中的教学班，无法删除，请先停用", 400);
         }
 
-        teacherMapper.disableTeacher(id);
         Integer userId = teacherMapper.selectUserIdByTeacherId(id);
-        if (userId != null) userMapper.disableUser(userId);
+        teacherMapper.delete(id);
+        if (userId != null) userMapper.deleteUserNyId(userId);
         return R.success("教师已删除");
     }
 }

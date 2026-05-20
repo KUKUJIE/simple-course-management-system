@@ -109,9 +109,18 @@ public interface CourseSectionMapper {
     @Update("UPDATE t_course_section SET status = 0 WHERE section_id = #{sectionId}")
     void closeSection(@Param("sectionId") Integer sectionId);
 
+    @Delete("DELETE FROM t_course_section WHERE section_id = #{sectionId}")
+    void deleteSectionById(@Param("sectionId") Integer sectionId);
+
     @Select("SELECT COUNT(*) FROM t_enrollment WHERE section_id = #{sectionId} AND status = 1")
     int countEnrollments(@Param("sectionId") Integer sectionId);
 
     @Select("SELECT selected_count FROM t_course_section WHERE section_id = #{sectionId}")
     Integer selectSelectedCount(@Param("sectionId") Integer sectionId);
+
+    @Select("SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(section_code, '-', -1) AS UNSIGNED)), 0) " +
+            "FROM t_course_section WHERE course_id = #{courseId} " +
+            "AND section_code LIKE CONCAT(#{courseCode}, '-%')")
+    Integer selectMaxSectionSeqByCourseId(@Param("courseId") Integer courseId,
+                                          @Param("courseCode") String courseCode);
 }
