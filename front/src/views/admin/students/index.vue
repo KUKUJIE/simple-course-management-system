@@ -20,7 +20,7 @@
 
     <el-card class="data-card" v-loading="loading">
       <el-table :data="filteredData" style="width: 100%" empty-text="暂无学生数据">
-        <el-table-column prop="studentId" label="学号" min-width="120" align="center" />
+        <el-table-column prop="studentNo" label="学号" min-width="120" align="center" />
         <el-table-column prop="studentName" label="姓名" min-width="140" />
         <el-table-column prop="gender" label="性别" width="70" align="center" />
         <el-table-column prop="majorName" label="专业" min-width="150" />
@@ -94,7 +94,7 @@ const tableData = ref([])
 const majorOptions = ref([])
 
 const formData = reactive({
-  studentNo: '', studentName: '', majorId: null, gender: '男', status: 1
+  studentId: null, studentNo: '', studentName: '', majorId: null, gender: '男', status: 1
 })
 
 const rules = {
@@ -108,7 +108,7 @@ const filteredData = computed(() => {
   if (searchKeyword.value) {
     const kw = searchKeyword.value.toLowerCase()
     list = list.filter(r =>
-      String(r.studentId || '').includes(kw) ||
+      String(r.studentNo || '').includes(kw) ||
       (r.studentName || '').toLowerCase().includes(kw)
     )
   }
@@ -127,7 +127,7 @@ const fetchData = async () => {
     loading.value = true
     const params = {}
     if (filterMajorId.value) params.majorId = filterMajorId.value
-    if (filterStatus.value !== null && filterStatus.value !== '') params.status = filterStatus.value
+    params.status = filterStatus.value !== null && filterStatus.value !== '' ? filterStatus.value : 1
     const res = await adminNewApi.getStudentList(params)
     if (res?.status === 200) tableData.value = res.data || []
     else ElMessage.error(res?.msg || '获取学生列表失败')
@@ -139,7 +139,7 @@ const fetchData = async () => {
 
 const resetForm = () => {
   formRef.value?.resetFields()
-  Object.assign(formData, { studentNo: '', studentName: '', majorId: null, gender: '男', status: 1 })
+  Object.assign(formData, { studentId: null, studentNo: '', studentName: '', majorId: null, gender: '男', status: 1 })
 }
 
 const handleAdd = () => { dialogType.value = 'add'; resetForm(); dialogVisible.value = true }
@@ -150,7 +150,8 @@ const handleEdit = async (row) => {
     if (res?.status === 200) {
       const d = res.data
       dialogType.value = 'edit'
-      formData.studentNo = d.studentNo || d.studentId
+      formData.studentId = d.studentId
+      formData.studentNo = d.studentNo || ''
       formData.studentName = d.studentName || d.name || ''
       formData.majorId = d.majorId
       formData.gender = d.gender || '男'
@@ -196,7 +197,7 @@ const handleSubmit = async () => {
     if (dialogType.value === 'add') {
       res = await adminNewApi.addStudent(payload)
     } else {
-      res = await adminNewApi.updateStudent(formData.studentNo || formData.studentId, payload)
+      res = await adminNewApi.updateStudent(formData.studentId, payload)
     }
     if (res?.status === 200) {
       ElMessage.success(dialogType.value === 'add' ? '新增成功' : '修改成功')
