@@ -8,7 +8,7 @@ import java.util.Map;
 
 @Mapper
 public interface UserMapper {
-    @Insert("insert into t_user (id,password,role) values (#{id},#{password},#{role})")
+    @Insert("insert into t_user (id, username, password, role, status) values (#{id}, #{username}, #{password}, #{role}, COALESCE(#{status}, 1))")
     void insertUser(User user);
 
     // ======== 管理员端：创建用户账号（自动生成ID） ========
@@ -27,7 +27,7 @@ public interface UserMapper {
     @Update("update t_user set password=#{password} where id=#{id}")
     void updateUser(User user);
 
-    @Select("select * from t_user wheere name like contact('%',#{name},'%')")
+    @Select("select * from t_user where username like concat('%',#{name},'%')")
     List<User> selectByUserName(@Param("name") String userName);
 
     @Select("select * from t_user where role = #{role}")

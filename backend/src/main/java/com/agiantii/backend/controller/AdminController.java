@@ -30,6 +30,7 @@ public class AdminController {
         user.setRole(Constant.ROLE_ADMIN);
         user.setPassword(password);
         user.setId(admin.getAdminId());
+        user.setUsername("admin_" + admin.getAdminId());
 
         try{
             adminMapper.insertAdmin(admin);

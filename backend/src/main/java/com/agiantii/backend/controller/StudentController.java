@@ -92,6 +92,7 @@ public class StudentController {
             User user = new User();
             user.setPassword(password);
             user.setId(student.getStudentId());
+            user.setUsername("student_" + student.getStudentId());
             user.setRole(Constant.ROLE_STUDENT);
             userMapper.insertUser(user);
             studentMapper.insertStudent(student);
