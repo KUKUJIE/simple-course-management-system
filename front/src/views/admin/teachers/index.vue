@@ -109,7 +109,7 @@ const filteredData = computed(() => {
   if (searchKeyword.value) {
     const kw = searchKeyword.value.toLowerCase()
     list = list.filter(r =>
-      String(r.teacherNo || '').includes(kw) ||
+      String(r.teacherNo || '').toLowerCase().includes(kw) ||
       (r.teacherName || '').toLowerCase().includes(kw)
     )
   }
