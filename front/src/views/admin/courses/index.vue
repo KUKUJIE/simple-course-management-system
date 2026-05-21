@@ -22,10 +22,11 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" min-width="180" fixed="right" align="center">
+        <el-table-column label="操作" min-width="160" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-            <el-button v-if="row.status === 1" type="danger" link @click="handleDisable(row)">停用</el-button>
+            <el-button type="warning" link v-if="row.status===1" @click="handleDisable(row)">停用</el-button>
+            <el-button type="success" link v-if="row.status===0" @click="handleEnable(row)">启用</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -64,6 +65,7 @@ import { adminNewApi } from '@/api/new-api'
 
 const loading = ref(false), submitting = ref(false), dialogVisible = ref(false), dialogType = ref('add')
 const formRef = ref(null), searchKeyword = ref(''), tableData = ref([])
+const getOriginalStatus = ref(null)
 const formData = reactive({ id: null, courseCode: '', name: '', credit: 2, status: 1 })
 const rules = {
   courseCode: [{ required: true, message: '请输入课程编码', trigger: 'blur' }],
@@ -87,7 +89,7 @@ const fetchData = async () => {
   finally { loading.value = false }
 }
 
-const resetForm = () => { formRef.value?.resetFields(); Object.assign(formData, { id: null, courseCode: '', name: '', credit: 2, status: 1 }) }
+const resetForm = () => { formRef.value?.resetFields(); Object.assign(formData, { id: null, courseCode: '', name: '', credit: 2, status: 1 }); getOriginalStatus.value = null }
 const handleAdd = () => { dialogType.value = 'add'; resetForm(); dialogVisible.value = true }
 const handleEdit = (row) => {
   dialogType.value = 'edit'
@@ -96,19 +98,44 @@ const handleEdit = (row) => {
   formData.name = row.name || ''
   formData.credit = row.credit || 2
   formData.status = row.status
+  getOriginalStatus.value = row.status
   dialogVisible.value = true
 }
 const handleDisable = async (row) => {
   try {
-    await ElMessageBox.confirm(`确定停用课程「${row.name}」？`, '停用确认', { type: 'warning' })
+    await ElMessageBox.confirm(
+      `确认停用课程「${row.name}（${row.courseCode}）」？\n\n停用后该课程将在学生端不可见，后续教学班也将无法新建。`,
+      '停用确认',
+      { confirmButtonText: '确认停用', cancelButtonText: '取消', type: 'warning' }
+    )
     const res = await adminNewApi.disableCourse(row.id)
-    if (res?.status === 200) { ElMessage.success('课程已停用'); fetchData() }
+    if (res?.status === 200) { ElMessage.success('已停用'); fetchData() }
     else ElMessage.error(res?.msg || '停用失败')
-  } catch {}
+  } catch { }
+}
+const handleEnable = async (row) => {
+  try {
+    await ElMessageBox.confirm(
+      `确认重新启用课程「${row.name}（${row.courseCode}）」？\n\n启用后该课程将在学生端恢复可见。`,
+      '启用确认',
+      { confirmButtonText: '确认启用', cancelButtonText: '取消', type: 'info' }
+    )
+    const res = await adminNewApi.updateCourse(row.id, { status: 1 })
+    if (res?.status === 200) { ElMessage.success('已启用'); fetchData() }
+    else ElMessage.error(res?.msg || '启用失败')
+  } catch { }
 }
 const handleSubmit = async () => {
   if (!formRef.value) return
   try { await formRef.value.validate() } catch { return }
+  if (dialogType.value === 'edit' && getOriginalStatus.value !== formData.status) {
+    const newStatusText = formData.status === 1 ? '启用' : '停用'
+    try {
+      await ElMessageBox.confirm(`确认将该课程状态改为"${newStatusText}"？`, '状态变更确认', {
+        confirmButtonText: '确认变更', cancelButtonText: '取消', type: 'warning'
+      })
+    } catch { return }
+  }
   submitting.value = true
   try {
     const payload = { courseCode: formData.courseCode, name: formData.name, credit: formData.credit, status: formData.status }

@@ -22,7 +22,6 @@
       <el-table :data="filteredData" style="width: 100%" empty-text="暂无教师数据">
         <el-table-column prop="teacherNo" label="工号" min-width="120" align="center" />
         <el-table-column prop="teacherName" label="姓名" min-width="140" />
-        <el-table-column prop="gender" label="性别" width="70" align="center" />
         <el-table-column prop="title" label="职称" min-width="120" />
         <el-table-column prop="departmentName" label="所属院系" min-width="150" />
         <el-table-column label="状态" width="80" align="center">
@@ -30,11 +29,11 @@
             <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" min-width="180" fixed="right" align="center">
+        <el-table-column label="操作" min-width="160" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-            <el-button v-if="row.status === 1" type="warning" link @click="handleDisable(row)">停用</el-button>
-            <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
+            <el-button type="warning" link v-if="row.status===1" @click="handleDisable(row)">停用</el-button>
+            <el-button type="success" link v-if="row.status===0" @click="handleEnable(row)">启用</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -62,12 +61,6 @@
             <el-option label="副教授" value="副教授" />
             <el-option label="讲师" value="讲师" />
             <el-option label="助教" value="助教" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="性别">
-          <el-select v-model="formData.gender" style="width: 100%">
-            <el-option label="男" value="男" />
-            <el-option label="女" value="女" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态" prop="status">
@@ -103,7 +96,7 @@ const tableData = ref([])
 const deptOptions = ref([])
 
 const formData = reactive({
-  teacherId: null, teacherNo: '', teacherName: '', departmentId: null, title: '讲师', gender: '男', status: 1
+  teacherId: null, teacherNo: '', teacherName: '', departmentId: null, title: '讲师', status: 1
 })
 
 const rules = {
@@ -148,7 +141,7 @@ const fetchData = async () => {
 
 const resetForm = () => {
   formRef.value?.resetFields()
-  Object.assign(formData, { teacherId: null, teacherNo: '', teacherName: '', departmentId: null, title: '讲师', gender: '男', status: 1 })
+  Object.assign(formData, { teacherId: null, teacherNo: '', teacherName: '', departmentId: null, title: '讲师', status: 1 })
 }
 
 const handleAdd = () => { dialogType.value = 'add'; resetForm(); dialogVisible.value = true }
@@ -164,7 +157,6 @@ const handleEdit = async (row) => {
       formData.teacherName = d.teacherName || d.name || ''
       formData.departmentId = d.departmentId
       formData.title = d.title || '讲师'
-      formData.gender = d.gender || '男'
       formData.status = d.status
       dialogVisible.value = true
     }
@@ -173,22 +165,28 @@ const handleEdit = async (row) => {
 
 const handleDisable = async (row) => {
   try {
-    await ElMessageBox.confirm(`确定停用教师「${row.teacherName || row.name}」？`, '停用确认', { type: 'warning' })
+    await ElMessageBox.confirm(
+      `确认强制停用教师「${row.teacherName}（${row.teacherNo}）」？\n\n停用后该教师：\n· 档案将被标记为停用状态\n· 登录账号将被同步停用\n· 历史授课、成绩等业务数据保留`,
+      '强制停用确认',
+      { confirmButtonText: '确认停用', cancelButtonText: '取消', type: 'warning' }
+    )
     const res = await adminNewApi.disableTeacher(row.teacherId)
-    if (res?.status === 200) { ElMessage.success('停用成功'); fetchData() }
+    if (res?.status === 200) { ElMessage.success('已停用'); fetchData() }
     else ElMessage.error(res?.msg || '停用失败')
-  } catch {}
+  } catch { /* 用户取消 */ }
 }
-
-const handleDelete = async (row) => {
+const handleEnable = async (row) => {
   try {
-    await ElMessageBox.confirm(`确定删除教师「${row.teacherName || row.name}」？此操作不可恢复。`, '删除确认', { type: 'warning' })
-    const res = await adminNewApi.deleteTeacher(row.teacherId)
-    if (res?.status === 200) { ElMessage.success('删除成功'); fetchData() }
-    else ElMessage.error(res?.msg || '删除失败')
-  } catch {}
+    await ElMessageBox.confirm(
+      `确认重新启用教师「${row.teacherName}（${row.teacherNo}）」？\n\n启用后将恢复该教师档案及登录权限。`,
+      '恢复启用确认',
+      { confirmButtonText: '确认启用', cancelButtonText: '取消', type: 'info' }
+    )
+    const res = await adminNewApi.updateTeacher(row.teacherId, { status: 1 })
+    if (res?.status === 200) { ElMessage.success('已启用'); fetchData() }
+    else ElMessage.error(res?.msg || '启用失败')
+  } catch { /* 用户取消 */ }
 }
-
 const handleSubmit = async () => {
   if (!formRef.value) return
   try { await formRef.value.validate() } catch { return }
@@ -198,7 +196,6 @@ const handleSubmit = async () => {
       teacherName: formData.teacherName,
       departmentId: formData.departmentId,
       title: formData.title,
-      gender: formData.gender,
       status: formData.status
     }
     if (dialogType.value === 'add' && formData.teacherNo) {

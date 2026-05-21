@@ -19,7 +19,8 @@
         <el-table-column label="操作" min-width="160" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-            <el-button v-if="row.status === 1" type="danger" link @click="handleDisable(row)">停用</el-button>
+            <el-button type="warning" link v-if="row.status===1" @click="handleDisable(row)">停用</el-button>
+            <el-button type="success" link v-if="row.status===0" @click="handleEnable(row)">启用</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -82,11 +83,27 @@ const handleEdit = async (row) => {
 }
 const handleDisable = async (row) => {
   try {
-    await ElMessageBox.confirm(`确定停用院系「${row.departmentName}」？`, '停用确认', { type: 'warning' })
+    await ElMessageBox.confirm(
+      `确认停用院系「${row.departmentName}」？\n\n停用后该院系及其下属专业均不可用。`,
+      '停用确认',
+      { confirmButtonText: '确认停用', cancelButtonText: '取消', type: 'warning' }
+    )
     const res = await adminNewApi.disableDepartment(row.departmentId)
-    if (res?.status === 200) { ElMessage.success('停用成功'); fetchData() }
+    if (res?.status === 200) { ElMessage.success('已停用'); fetchData() }
     else ElMessage.error(res?.msg || '停用失败')
-  } catch {}
+  } catch { }
+}
+const handleEnable = async (row) => {
+  try {
+    await ElMessageBox.confirm(
+      `确认重新启用院系「${row.departmentName}」？`,
+      '启用确认',
+      { confirmButtonText: '确认启用', cancelButtonText: '取消', type: 'info' }
+    )
+    const res = await adminNewApi.updateDepartment(row.departmentId, { departmentName: row.departmentName, status: 1 })
+    if (res?.status === 200) { ElMessage.success('已启用'); fetchData() }
+    else ElMessage.error(res?.msg || '启用失败')
+  } catch { }
 }
 const handleSubmit = async () => {
   if (!formRef.value) return

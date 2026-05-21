@@ -29,11 +29,11 @@
             <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" min-width="180" fixed="right" align="center">
+        <el-table-column label="操作" min-width="160" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-            <el-button v-if="row.status === 1" type="warning" link @click="handleDisable(row)">停用</el-button>
-            <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
+            <el-button type="warning" link v-if="row.status===1" @click="handleDisable(row)">停用</el-button>
+            <el-button type="success" link v-if="row.status===0" @click="handleEnable(row)">启用</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -57,8 +57,8 @@
         </el-form-item>
         <el-form-item label="性别">
           <el-select v-model="formData.gender" style="width: 100%">
-            <el-option label="男" value="男" />
-            <el-option label="女" value="女" />
+            <el-option label="男" value="M" />
+            <el-option label="女" value="F" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态" prop="status">
@@ -94,7 +94,7 @@ const tableData = ref([])
 const majorOptions = ref([])
 
 const formData = reactive({
-  studentId: null, studentNo: '', studentName: '', majorId: null, gender: '男', status: 1
+  studentId: null, studentNo: '', studentName: '', majorId: null, gender: 'M', status: 1
 })
 
 const rules = {
@@ -139,7 +139,7 @@ const fetchData = async () => {
 
 const resetForm = () => {
   formRef.value?.resetFields()
-  Object.assign(formData, { studentId: null, studentNo: '', studentName: '', majorId: null, gender: '男', status: 1 })
+  Object.assign(formData, { studentId: null, studentNo: '', studentName: '', majorId: null, gender: 'M', status: 1 })
 }
 
 const handleAdd = () => { dialogType.value = 'add'; resetForm(); dialogVisible.value = true }
@@ -154,7 +154,7 @@ const handleEdit = async (row) => {
       formData.studentNo = d.studentNo || ''
       formData.studentName = d.studentName || d.name || ''
       formData.majorId = d.majorId
-      formData.gender = d.gender || '男'
+      formData.gender = d.gender || 'M'
       formData.status = d.status
       dialogVisible.value = true
     }
@@ -163,22 +163,28 @@ const handleEdit = async (row) => {
 
 const handleDisable = async (row) => {
   try {
-    await ElMessageBox.confirm(`确定停用学生「${row.studentName || row.name}」？`, '停用确认', { type: 'warning' })
+    await ElMessageBox.confirm(
+      `确认强制停用学生「${row.studentName}（${row.studentNo}）」？\n\n停用后该学生：\n· 档案将被标记为停用状态\n· 登录账号将被同步停用\n· 历史选课、成绩等业务数据保留`,
+      '强制停用确认',
+      { confirmButtonText: '确认停用', cancelButtonText: '取消', type: 'warning', dangerouslyUseHTMLString: false }
+    )
     const res = await adminNewApi.disableStudent(row.studentId)
-    if (res?.status === 200) { ElMessage.success('停用成功'); fetchData() }
+    if (res?.status === 200) { ElMessage.success('已停用'); fetchData() }
     else ElMessage.error(res?.msg || '停用失败')
-  } catch {}
+  } catch { /* 用户取消 */ }
 }
-
-const handleDelete = async (row) => {
+const handleEnable = async (row) => {
   try {
-    await ElMessageBox.confirm(`确定删除学生「${row.studentName || row.name}」？此操作不可恢复。`, '删除确认', { type: 'warning' })
-    const res = await adminNewApi.deleteStudent(row.studentId)
-    if (res?.status === 200) { ElMessage.success('删除成功'); fetchData() }
-    else ElMessage.error(res?.msg || '删除失败')
-  } catch {}
+    await ElMessageBox.confirm(
+      `确认重新启用学生「${row.studentName}（${row.studentNo}）」？\n\n启用后将恢复该学生档案及登录权限。`,
+      '恢复启用确认',
+      { confirmButtonText: '确认启用', cancelButtonText: '取消', type: 'info' }
+    )
+    const res = await adminNewApi.updateStudent(row.studentId, { status: 1 })
+    if (res?.status === 200) { ElMessage.success('已启用'); fetchData() }
+    else ElMessage.error(res?.msg || '启用失败')
+  } catch { /* 用户取消 */ }
 }
-
 const handleSubmit = async () => {
   if (!formRef.value) return
   try { await formRef.value.validate() } catch { return }
