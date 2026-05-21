@@ -3,35 +3,32 @@
     <!-- 统计卡片区域 -->
     <el-row :gutter="20" class="dashboard-cards">
       <el-col :span="8">
-        <el-card class="data-card">
-          <canvas ref="courseCanvas" class="card-canvas"></canvas>
+        <el-card class="data-card courses">
           <div class="card-content">
+            <div class="card-icon">📖</div>
             <h3>已选课程</h3>
             <div class="number">{{ stats.selectedCourses }}</div>
-            <div class="desc">总课程: {{ stats.totalCourses }}</div>
-            <el-button type="text" @click="$router.push('/student/my-courses')">
-              查看详情
-            </el-button>
+            <div class="desc">总课程 {{ stats.totalCourses }} 门</div>
           </div>
         </el-card>
       </el-col>
       <el-col :span="8">
-        <el-card class="data-card">
-          <canvas ref="creditCanvas" class="card-canvas"></canvas>
+        <el-card class="data-card credits">
           <div class="card-content">
+            <div class="card-icon">⭐</div>
             <h3>已修学分</h3>
             <div class="number">{{ stats.earnedCredits }}</div>
-            <div class="desc">总学分: {{ stats.requiredCredits }}</div>
+            <div class="desc">总学分 {{ stats.requiredCredits }}</div>
           </div>
         </el-card>
       </el-col>
       <el-col :span="8">
-        <el-card class="data-card">
-          <canvas ref="gpaCanvas" class="card-canvas"></canvas>
+        <el-card class="data-card gpa">
           <div class="card-content">
+            <div class="card-icon">📊</div>
             <h3>平均绩点</h3>
             <div class="number">{{ stats.gpa.toFixed(2) }}</div>
-            <div class="desc">较上学期: {{ stats.gpaChange > 0 ? '+' : '' }}{{ stats.gpaChange.toFixed(2) }}</div>
+            <div class="desc">较上学期 {{ stats.gpaChange > 0 ? '+' : '' }}{{ stats.gpaChange.toFixed(2) }}</div>
           </div>
         </el-card>
       </el-col>
@@ -83,10 +80,7 @@ const stats = reactive({
 const recentCourses = ref([])
 const loading = ref(false)
 
-// Canvas 动画
-const courseCanvas = ref(null)
-const creditCanvas = ref(null)
-const gpaCanvas = ref(null)
+// Canvas 动画（已废弃）
 
 // 安全获取 studentId
 const getStudentId = () => {
@@ -160,56 +154,10 @@ const fetchRecentCourses = async () => {
   }
 }
 
-// 绘制圆形进度
-const drawCircleProgress = (canvas, percentage, color) => {
-  const ctx = canvas.getContext('2d')
-  const centerX = canvas.width / 2
-  const centerY = canvas.height / 2
-  const radius = Math.min(centerX, centerY) - 10
-  
-  // 清空画布
-  ctx.clearRect(0, 0, canvas.width, canvas.height)
-  
-  // 绘制背景圆
-  ctx.beginPath()
-  ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'
-  ctx.lineWidth = 10
-  ctx.stroke()
-  
-  // 绘制进度圆
-  ctx.beginPath()
-  ctx.arc(centerX, centerY, radius, -Math.PI / 2, (-Math.PI / 2) + (Math.PI * 2 * percentage))
-  ctx.strokeStyle = color
-  ctx.lineWidth = 10
-  ctx.stroke()
-}
-
-// 初始化图表
-const initCharts = () => {
-  // 设置Canvas尺寸
-  const canvases = [courseCanvas.value, creditCanvas.value, gpaCanvas.value]
-  canvases.forEach(canvas => {
-    canvas.width = 120
-    canvas.height = 120
-  })
-  
-  // 绘制进度
-  drawCircleProgress(courseCanvas.value, stats.selectedCourses / stats.totalCourses, '#67C23A')
-  drawCircleProgress(creditCanvas.value, stats.earnedCredits / stats.requiredCredits, '#409EFF')
-  drawCircleProgress(gpaCanvas.value, stats.gpa / 4, '#E6A23C')
-}
-
-// 监听数据变化更新图表
-watch(stats, () => {
-  initCharts()
-})
-
-// 初始化
+// 初始化（首次加载）
 onMounted(async () => {
   await fetchStats()
   await fetchRecentCourses()
-  initCharts()
 })
 </script>
 

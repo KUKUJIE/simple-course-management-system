@@ -3,73 +3,76 @@
     <!-- 统计卡片区域 -->
     <el-row :gutter="20" class="dashboard-cards">
       <el-col :span="6">
-        <el-card class="data-card">
-          <canvas ref="studentCanvas" class="card-canvas"></canvas>
+        <el-card class="data-card students">
           <div class="card-content">
+            <div class="card-icon">👥</div>
             <h3>学生总数</h3>
             <div class="number">{{ stats.totalStudents }}</div>
-            <div class="desc">本学期新增: {{ stats.newStudents }}</div>
+            <div class="desc">本学期新增 {{ stats.newStudents }} 人</div>
           </div>
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card class="data-card">
-          <canvas ref="teacherCanvas" class="card-canvas"></canvas>
+        <el-card class="data-card teachers">
           <div class="card-content">
+            <div class="card-icon">🧑‍🏫</div>
             <h3>教师总数</h3>
             <div class="number">{{ stats.totalTeachers }}</div>
-            <div class="desc">本学期新增: {{ stats.newTeachers }}</div>
+            <div class="desc">本学期新增 {{ stats.newTeachers }} 人</div>
           </div>
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card class="data-card">
-          <canvas ref="courseCanvas" class="card-canvas"></canvas>
+        <el-card class="data-card courses">
           <div class="card-content">
+            <div class="card-icon">📚</div>
             <h3>课程总数</h3>
             <div class="number">{{ stats.totalCourses }}</div>
-            <div class="desc">本学期开课: {{ stats.activeCourses }}</div>
+            <div class="desc">本学期开课 {{ stats.activeCourses }} 门</div>
           </div>
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card class="data-card">
-          <canvas ref="scoreCanvas" class="card-canvas"></canvas>
+        <el-card class="data-card score">
           <div class="card-content">
+            <div class="card-icon">📊</div>
             <h3>平均成绩</h3>
             <div class="number">{{ stats.averageScore.toFixed(1) }}</div>
-            <div class="desc">及格率: {{ stats.passRate.toFixed(1) }}%</div>
+            <div class="desc">及格率 {{ stats.passRate.toFixed(1) }}%</div>
           </div>
         </el-card>
       </el-col>
     </el-row>
 
-    <!-- 最近操作记录 -->
-    <el-card class="recent-list">
+    <!-- 数据预警面板 -->
+    <el-card class="alert-panel">
       <template #header>
         <div class="card-header">
-          <span>最近操作记录</span>
+          <span>📊 数据预警</span>
         </div>
       </template>
 
-      <el-timeline>
-        <el-timeline-item
-          v-for="(activity, index) in recentActivities"
-          :key="index"
-          :type="activity.type"
-          :timestamp="activity.time"
-        >
-          {{ activity.content }}
-        </el-timeline-item>
-      </el-timeline>
+      <el-row :gutter="16">
+        <el-col :span="8" v-for="alert in alerts" :key="alert.title">
+          <el-card class="alert-card" :class="alert.level" @click="handleAlertClick(alert.link)">
+            <div class="alert-icon">{{ alert.icon }}</div>
+            <div class="alert-title">{{ alert.title }}</div>
+            <div class="alert-value">{{ alert.value }}</div>
+            <div class="alert-desc">{{ alert.desc }}</div>
+          </el-card>
+        </el-col>
+      </el-row>
     </el-card>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onActivated, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { adminNewApi } from '@/api/new-api'
 import './style.scss'
+
+const router = useRouter()
 
 // 统计数据
 const stats = reactive({
@@ -83,114 +86,101 @@ const stats = reactive({
   passRate: 0
 })
 
-// Canvas引用
-const studentCanvas = ref(null)
-const teacherCanvas = ref(null)
-const courseCanvas = ref(null)
-const scoreCanvas = ref(null)
+// Canvas引用（已废弃）
 
-// 最近活动
-const recentActivities = ref([
-  {
-    content: '新增学生账号 202401001',
-    timestamp: '2024-01-10 10:00:00',
-    type: 'primary'
-  },
-  {
-    content: '更新教师信息 张三',
-    timestamp: '2024-01-10 09:30:00',
-    type: 'success'
-  },
-  {
-    content: '删除课程 高等数学',
-    timestamp: '2024-01-10 09:00:00',
-    type: 'danger'
-  }
-])
+// 最近活动（已废弃，替换为数据预警）
+const sectionsData = ref([])
+const studentsData = ref([])
+const teachersData = ref([])
+const coursesData = ref([])
+
+// 数据预警（纯前端计算，无需后端接口）
+const alerts = computed(() => {
+  const sections = sectionsData.value
+  const students = studentsData.value
+  const teachers = teachersData.value
+  const courses = coursesData.value
+
+  const disabledStudents = students.filter(s => s.status === 0).length
+  const disabledTeachers = teachers.filter(t => t.status === 0).length
+  const disabledCourses = courses.filter(c => c.status === 0).length
+  const fullSections = sections.filter(s => s.capacityLimit > 0 && (s.selectedCount || 0) >= s.capacityLimit).length
+  const emptySections = sections.filter(s => (s.selectedCount || 0) === 0).length
+  const totalSections = sections.length
+
+  return [
+    {
+      icon: '👥',
+      title: '停用账号',
+      value: `${disabledStudents + disabledTeachers} 个`,
+      desc: `学生 ${disabledStudents} | 教师 ${disabledTeachers}`,
+      level: disabledStudents + disabledTeachers > 0 ? 'warn' : 'safe',
+      link: disabledStudents > 0 ? '/admin/students' : '/admin/teachers'
+    },
+    {
+      icon: '📚',
+      title: '课程状态',
+      value: `${disabledCourses} 门停开`,
+      desc: `共 ${courses.length} 门课程`,
+      level: disabledCourses > 0 ? 'warn' : 'safe',
+      link: '/admin/courses'
+    },
+    {
+      icon: '🏫',
+      title: '教学班选课',
+      value: `${fullSections} 个班满`,
+      desc: `${emptySections} 个空班 | 共 ${totalSections} 个班`,
+      level: fullSections > 0 ? 'info' : (emptySections > totalSections / 2 ? 'warn' : 'safe'),
+      link: '/admin/sections'
+    }
+  ]
+})
 
 // 获取统计数据
 const fetchStats = async () => {
   try {
-    // 使用已有 API 获取课程和教学班数量
     const [coursesRes, sectionsRes, studentsRes, teachersRes] = await Promise.all([
       adminNewApi.getCourseList(),
       adminNewApi.getSectionList(),
-      adminNewApi.getStudentList(),
-      adminNewApi.getTeacherList()
+      adminNewApi.getStudentList({ status: null }),
+      adminNewApi.getTeacherList({ status: null })
     ])
+
     if (coursesRes?.status === 200) {
-      const courses = Array.isArray(coursesRes.data) ? coursesRes.data : []
-      stats.totalCourses = courses.length
-      stats.activeCourses = courses.filter(c => c.status === 1).length
+      coursesData.value = Array.isArray(coursesRes.data) ? coursesRes.data : []
+      stats.totalCourses = coursesData.value.length
+      stats.activeCourses = coursesData.value.filter(c => c.status === 1).length
     }
     if (sectionsRes?.status === 200) {
-      const sections = Array.isArray(sectionsRes.data) ? sectionsRes.data : []
-      // sections 数据已通过 getSectionList 获取，可用于后续扩展
+      sectionsData.value = Array.isArray(sectionsRes.data) ? sectionsRes.data : []
     }
-    // 学生/教师从实际接口获取
     if (studentsRes?.status === 200) {
-      const students = Array.isArray(studentsRes.data) ? studentsRes.data : []
-      stats.totalStudents = students.length
-      stats.newStudents = students.filter(s => s.status === 1).length
+      studentsData.value = Array.isArray(studentsRes.data) ? studentsRes.data : []
+      stats.totalStudents = studentsData.value.length
+      stats.newStudents = studentsData.value.filter(s => s.status === 1).length
     }
     if (teachersRes?.status === 200) {
-      const teachers = Array.isArray(teachersRes.data) ? teachersRes.data : []
-      stats.totalTeachers = teachers.length
-      stats.newTeachers = teachers.filter(t => t.status === 1).length
+      teachersData.value = Array.isArray(teachersRes.data) ? teachersRes.data : []
+      stats.totalTeachers = teachersData.value.length
+      stats.newTeachers = teachersData.value.filter(t => t.status === 1).length
     }
 
-    // 成绩统计留待第二阶段接入
     stats.averageScore = 85.5
     stats.passRate = 95.5
-
-    // 绘制图表
-    initCharts()
   } catch (error) {
     console.error('获取统计数据失败:', error)
   }
 }
 
-// 绘制圆形进度
-const drawCircleProgress = (canvas, percentage, color) => {
-  const ctx = canvas.getContext('2d')
-  const centerX = canvas.width / 2
-  const centerY = canvas.height / 2
-  const radius = Math.min(centerX, centerY) - 10
-  
-  ctx.clearRect(0, 0, canvas.width, canvas.height)
-  
-  // 背景圆
-  ctx.beginPath()
-  ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'
-  ctx.lineWidth = 10
-  ctx.stroke()
-  
-  // 进度圆
-  ctx.beginPath()
-  ctx.arc(centerX, centerY, radius, -Math.PI / 2, (-Math.PI / 2) + (Math.PI * 2 * percentage))
-  ctx.strokeStyle = color
-  ctx.lineWidth = 10
-  ctx.stroke()
-}
-
-// 初始化图表
-const initCharts = () => {
-  const canvases = [studentCanvas.value, teacherCanvas.value, courseCanvas.value, scoreCanvas.value]
-  canvases.forEach(canvas => {
-    canvas.width = 120
-    canvas.height = 120
-  })
-  
-  // 绘制进度
-  drawCircleProgress(studentCanvas.value, Math.min(stats.totalStudents / 1000, 1), '#409EFF')
-  drawCircleProgress(teacherCanvas.value, Math.min(stats.totalTeachers / 100, 1), '#67C23A')
-  drawCircleProgress(courseCanvas.value, stats.activeCourses / stats.totalCourses, '#E6A23C')
-  drawCircleProgress(scoreCanvas.value, stats.passRate / 100, '#F56C6C')
-}
-
-// 初始化
+// 初始化（首次加载 + 后续切换回来都会触发）
 onMounted(() => {
   fetchStats()
 })
+onActivated(() => {
+  fetchStats()
+})
+
+const handleAlertClick = (link) => {
+  if (link) router.push(link)
+}
 </script> 

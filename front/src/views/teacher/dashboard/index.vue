@@ -3,35 +3,33 @@
     <!-- 统计卡片区域 -->
     <el-row :gutter="20" class="dashboard-cards">
       <el-col :span="8">
-        <el-card class="data-card">
-          <canvas ref="courseCanvas" class="card-canvas"></canvas>
+        <el-card class="data-card courses">
           <div class="card-content">
+            <div class="card-icon">📚</div>
             <h3>开设课程</h3>
             <div class="number">{{ stats.totalCourses }}</div>
-            <div class="desc">本学期: {{ stats.currentTermCourses }} 门</div>
-            <el-button type="text" @click="$router.push('/teacher/courses')">
-              课程管理
-            </el-button>
+            <div class="desc">本学期 {{ stats.currentTermCourses }} 门</div>
+            <el-button type="text" @click="$router.push('/teacher/courses')">课程管理</el-button>
           </div>
         </el-card>
       </el-col>
       <el-col :span="8">
-        <el-card class="data-card">
-          <canvas ref="studentCanvas" class="card-canvas"></canvas>
+        <el-card class="data-card students">
           <div class="card-content">
+            <div class="card-icon">👥</div>
             <h3>授课学生</h3>
             <div class="number">{{ stats.totalStudents }}</div>
-            <div class="desc">平均每课: {{ stats.averageStudents }} 人</div>
+            <div class="desc">平均每课 {{ stats.averageStudents }} 人</div>
           </div>
         </el-card>
       </el-col>
       <el-col :span="8">
-        <el-card class="data-card">
-          <canvas ref="gradeCanvas" class="card-canvas"></canvas>
+        <el-card class="data-card grades">
           <div class="card-content">
+            <div class="card-icon">📊</div>
             <h3>课程成绩</h3>
             <div class="number">{{ stats.averageScore.toFixed(1) }}</div>
-            <div class="desc">及格率: {{ stats.passRate.toFixed(1) }}%</div>
+            <div class="desc">及格率 {{ stats.passRate.toFixed(1) }}%</div>
           </div>
         </el-card>
       </el-col>
@@ -103,10 +101,7 @@ const stats = reactive({
 // 课程列表
 const courseList = ref([])
 
-// Canvas引用
-const courseCanvas = ref(null)
-const studentCanvas = ref(null)
-const gradeCanvas = ref(null)
+// Canvas引用（已废弃）
 
 // 安全获取 enrolledCount
 const getEnrolledCount = (s) => s.totalStudents || s.enrolledCount || s.selectedCount || 0
@@ -199,43 +194,7 @@ const fetchTeacherData = async () => {
   }
 }
 
-// 绘制圆形进度
-const drawCircleProgress = (canvas, percentage, color) => {
-  const ctx = canvas.getContext('2d')
-  const centerX = canvas.width / 2
-  const centerY = canvas.height / 2
-  const radius = Math.min(centerX, centerY) - 10
-  
-  ctx.clearRect(0, 0, canvas.width, canvas.height)
-  
-  // 背景圆
-  ctx.beginPath()
-  ctx.arc(centerX, centerY, radius, 0, Math.PI * 2)
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'
-  ctx.lineWidth = 10
-  ctx.stroke()
-  
-  // 进度圆
-  ctx.beginPath()
-  ctx.arc(centerX, centerY, radius, -Math.PI / 2, (-Math.PI / 2) + (Math.PI * 2 * percentage))
-  ctx.strokeStyle = color
-  ctx.lineWidth = 10
-  ctx.stroke()
-}
-
-// 初始化图表
-const initCharts = () => {
-  const canvases = [courseCanvas.value, studentCanvas.value, gradeCanvas.value]
-  canvases.forEach(canvas => {
-    canvas.width = 120
-    canvas.height = 120
-  })
-  
-  // 绘制进度
-  drawCircleProgress(courseCanvas.value, stats.currentTermCourses / 6, '#67C23A') // 假设最多6门课
-  drawCircleProgress(studentCanvas.value, Math.min(stats.averageStudents / 50, 1), '#409EFF') // 假设平均50人为满
-  drawCircleProgress(gradeCanvas.value, stats.passRate / 100, '#E6A23C')
-}
+// 绘制圆形进度（已废弃）
 
 // 获取容量标签类型
 const getCapacityTagType = (selected, limit) => {
@@ -250,14 +209,8 @@ const handleGrades = (course) => {
   router.push(`/teacher/grades?sectionId=${course.id || course.sectionId}`)
 }
 
-// 监听数据变化更新图表
-watch(stats, () => {
-  initCharts()
-})
-
 // 初始化
 onMounted(async () => {
   await fetchTeacherData()
-  initCharts()
 })
 </script> 
