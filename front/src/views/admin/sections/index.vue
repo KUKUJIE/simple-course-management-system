@@ -31,8 +31,6 @@
         <el-table-column label="操作" min-width="200" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-            <el-button type="warning" link v-if="row.status===1" @click="handleClose(row)">关闭</el-button>
-            <el-button type="success" link v-if="row.status===0" @click="handleOpen(row)">开启</el-button>
             <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>

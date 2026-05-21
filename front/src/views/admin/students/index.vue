@@ -29,11 +29,10 @@
             <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" min-width="160" fixed="right" align="center">
+        <el-table-column label="操作" min-width="180" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-            <el-button type="warning" link v-if="row.status===1" @click="handleDisable(row)">停用</el-button>
-            <el-button type="success" link v-if="row.status===0" @click="handleEnable(row)">启用</el-button>
+            <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -127,7 +126,7 @@ const fetchData = async () => {
     loading.value = true
     const params = {}
     if (filterMajorId.value) params.majorId = filterMajorId.value
-    params.status = filterStatus.value !== null && filterStatus.value !== '' ? filterStatus.value : 1
+    if (filterStatus.value !== null && filterStatus.value !== '') params.status = filterStatus.value
     const res = await adminNewApi.getStudentList(params)
     if (res?.status === 200) tableData.value = res.data || []
     else ElMessage.error(res?.msg || '获取学生列表失败')
@@ -161,30 +160,19 @@ const handleEdit = async (row) => {
   } catch (e) { ElMessage.error('获取学生详情失败') }
 }
 
-const handleDisable = async (row) => {
+const handleDelete = async (row) => {
   try {
     await ElMessageBox.confirm(
-      `确认强制停用学生「${row.studentName}（${row.studentNo}）」？\n\n停用后该学生：\n· 档案将被标记为停用状态\n· 登录账号将被同步停用\n· 历史选课、成绩等业务数据保留`,
-      '强制停用确认',
-      { confirmButtonText: '确认停用', cancelButtonText: '取消', type: 'warning', dangerouslyUseHTMLString: false }
+      `确认删除学生「${row.studentName}（${row.studentNo}）」？\n\n⚠ 删除后数据不可恢复，选课及成绩记录将被一并清除。`,
+      '⚠ 删除确认',
+      { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'error' }
     )
-    const res = await adminNewApi.disableStudent(row.studentId)
-    if (res?.status === 200) { ElMessage.success('已停用'); fetchData() }
-    else ElMessage.error(res?.msg || '停用失败')
-  } catch { /* 用户取消 */ }
+    const res = await adminNewApi.deleteStudent(row.studentId)
+    if (res?.status === 200) { ElMessage.success('已删除'); fetchData() }
+    else ElMessage.warning(res?.msg || '无法删除，请先解除关联')
+  } catch { }
 }
-const handleEnable = async (row) => {
-  try {
-    await ElMessageBox.confirm(
-      `确认重新启用学生「${row.studentName}（${row.studentNo}）」？\n\n启用后将恢复该学生档案及登录权限。`,
-      '恢复启用确认',
-      { confirmButtonText: '确认启用', cancelButtonText: '取消', type: 'info' }
-    )
-    const res = await adminNewApi.updateStudent(row.studentId, { status: 1 })
-    if (res?.status === 200) { ElMessage.success('已启用'); fetchData() }
-    else ElMessage.error(res?.msg || '启用失败')
-  } catch { /* 用户取消 */ }
-}
+
 const handleSubmit = async () => {
   if (!formRef.value) return
   try { await formRef.value.validate() } catch { return }

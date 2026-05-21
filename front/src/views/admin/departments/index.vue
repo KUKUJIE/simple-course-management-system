@@ -16,11 +16,10 @@
             <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" min-width="160" fixed="right" align="center">
+        <el-table-column label="操作" min-width="180" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-            <el-button type="warning" link v-if="row.status===1" @click="handleDisable(row)">停用</el-button>
-            <el-button type="success" link v-if="row.status===0" @click="handleEnable(row)">启用</el-button>
+            <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -81,28 +80,16 @@ const handleEdit = async (row) => {
   formData.status = row.status
   dialogVisible.value = true
 }
-const handleDisable = async (row) => {
+const handleDelete = async (row) => {
   try {
     await ElMessageBox.confirm(
-      `确认停用院系「${row.departmentName}」？\n\n停用后该院系及其下属专业均不可用。`,
-      '停用确认',
-      { confirmButtonText: '确认停用', cancelButtonText: '取消', type: 'warning' }
+      `确认删除院系「${row.departmentName}」？\n\n⚠ 删除后数据不可恢复，下属专业也将受影响。`,
+      '⚠ 删除确认',
+      { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'error' }
     )
-    const res = await adminNewApi.disableDepartment(row.departmentId)
-    if (res?.status === 200) { ElMessage.success('已停用'); fetchData() }
-    else ElMessage.error(res?.msg || '停用失败')
-  } catch { }
-}
-const handleEnable = async (row) => {
-  try {
-    await ElMessageBox.confirm(
-      `确认重新启用院系「${row.departmentName}」？`,
-      '启用确认',
-      { confirmButtonText: '确认启用', cancelButtonText: '取消', type: 'info' }
-    )
-    const res = await adminNewApi.updateDepartment(row.departmentId, { departmentName: row.departmentName, status: 1 })
-    if (res?.status === 200) { ElMessage.success('已启用'); fetchData() }
-    else ElMessage.error(res?.msg || '启用失败')
+    const res = await adminNewApi.deleteDepartment(row.departmentId)
+    if (res?.status === 200) { ElMessage.success('已删除'); fetchData() }
+    else ElMessage.warning(res?.msg || '无法删除，请先解除关联')
   } catch { }
 }
 const handleSubmit = async () => {

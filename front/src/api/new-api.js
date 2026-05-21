@@ -161,6 +161,9 @@ export const adminNewApi = {
   async disableCourse(id) {
     return http.put(`/api/admin/courses/${id}/disable`)
   },
+  async deleteCourse(id) {
+    return http.delete(`/api/admin/courses/${id}`)
+  },
 
   // ======================== 教学班管理 ========================
 
@@ -200,6 +203,9 @@ export const adminNewApi = {
   async disableDepartment(id) {
     return http.put(`/api/admin/departments/${id}/disable`)
   },
+  async deleteDepartment(id) {
+    return http.delete(`/api/admin/departments/${id}`)
+  },
 
   // ======================== 专业管理 ========================
 
@@ -218,6 +224,9 @@ export const adminNewApi = {
   async disableMajor(id) {
     return http.put(`/api/admin/majors/${id}/disable`)
   },
+  async deleteMajor(id) {
+    return http.delete(`/api/admin/majors/${id}`)
+  },
 
   // ======================== 教室管理 ========================
 
@@ -235,6 +244,9 @@ export const adminNewApi = {
   },
   async disableClassroom(id) {
     return http.put(`/api/admin/classrooms/${id}/disable`)
+  },
+  async deleteClassroom(id) {
+    return http.delete(`/api/admin/classrooms/${id}`)
   },
 
   // ======================== 学生管理 ========================

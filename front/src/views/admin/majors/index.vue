@@ -9,19 +9,18 @@
     </div>
     <el-card class="data-card" v-loading="loading">
       <el-table :data="filteredData" style="width: 100%" empty-text="暂无专业数据">
-        <el-table-column prop="major_id" label="编号" min-width="100" align="center" />
-        <el-table-column prop="major_name" label="专业名称" min-width="200" />
-        <el-table-column prop="department_name" label="所属院系" min-width="160" />
+        <el-table-column prop="majorId" label="编号" min-width="100" align="center" />
+        <el-table-column prop="majorName" label="专业名称" min-width="200" />
+        <el-table-column prop="departmentName" label="所属院系" min-width="160" />
         <el-table-column label="状态" min-width="80" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" min-width="160" fixed="right" align="center">
+        <el-table-column label="操作" min-width="180" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-            <el-button type="warning" link v-if="row.status===1" @click="handleDisable(row)">停用</el-button>
-            <el-button type="success" link v-if="row.status===0" @click="handleEnable(row)">启用</el-button>
+            <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -29,11 +28,11 @@
 
     <el-dialog v-model="dialogVisible" :title="dialogType === 'add' ? '新增专业' : '编辑专业'" width="500px" @close="resetForm">
       <el-form ref="formRef" :model="formData" :rules="rules" label-width="80px">
-        <el-form-item label="专业名称" prop="major_name">
-          <el-input v-model="formData.major_name" placeholder="请输入专业名称" />
+        <el-form-item label="专业名称" prop="majorName">
+          <el-input v-model="formData.majorName" placeholder="请输入专业名称" />
         </el-form-item>
-        <el-form-item label="所属院系" prop="department_id">
-          <el-select v-model="formData.department_id" placeholder="请选择院系" style="width: 100%" filterable>
+        <el-form-item label="所属院系" prop="departmentId">
+          <el-select v-model="formData.departmentId" placeholder="请选择院系" style="width: 100%" filterable>
             <el-option v-for="d in deptOptions" :key="d.departmentId" :label="d.departmentName" :value="d.departmentId" />
           </el-select>
         </el-form-item>
@@ -59,16 +58,16 @@ import { adminNewApi } from '@/api/new-api'
 
 const loading = ref(false), submitting = ref(false), dialogVisible = ref(false), dialogType = ref('add')
 const formRef = ref(null), searchKeyword = ref(''), tableData = ref([]), deptOptions = ref([])
-const formData = reactive({ major_id: null, major_name: '', department_id: null, status: 1 })
+const formData = reactive({ majorId: null, majorName: '', departmentId: null, status: 1 })
 const rules = {
-  major_name: [{ required: true, message: '请输入专业名称', trigger: 'blur' }],
-  department_id: [{ required: true, message: '请选择院系', trigger: 'change' }]
+  majorName: [{ required: true, message: '请输入专业名称', trigger: 'blur' }],
+  departmentId: [{ required: true, message: '请选择院系', trigger: 'change' }]
 }
 
 const filteredData = computed(() => {
   if (!searchKeyword.value) return tableData.value
   const kw = searchKeyword.value.toLowerCase()
-  return tableData.value.filter(r => (r.major_name || '').toLowerCase().includes(kw))
+  return tableData.value.filter(r => (r.majorName || '').toLowerCase().includes(kw))
 })
 
 const fetchData = async () => {
@@ -88,38 +87,26 @@ const loadDepts = async () => {
   } catch {}
 }
 
-const resetForm = () => { formRef.value?.resetFields(); Object.assign(formData, { major_id: null, major_name: '', department_id: null, status: 1 }) }
+const resetForm = () => { formRef.value?.resetFields(); Object.assign(formData, { majorId: null, majorName: '', departmentId: null, status: 1 }) }
 const handleAdd = () => { dialogType.value = 'add'; resetForm(); dialogVisible.value = true }
 const handleEdit = async (row) => {
   dialogType.value = 'edit'
-  formData.major_id = row.major_id
-  formData.major_name = row.major_name
-  formData.department_id = row.department_id
+  formData.majorId = row.majorId
+  formData.majorName = row.majorName
+  formData.departmentId = row.departmentId
   formData.status = row.status
   dialogVisible.value = true
 }
-const handleDisable = async (row) => {
+const handleDelete = async (row) => {
   try {
     await ElMessageBox.confirm(
-      `确认停用专业「${row.major_name}」？\n\n停用后该专业将不可用。`,
-      '停用确认',
-      { confirmButtonText: '确认停用', cancelButtonText: '取消', type: 'warning' }
+      `确认删除专业「${row.majorName}」？\n\n⚠ 删除后数据不可恢复，关联学生数据也将受影响。`,
+      '⚠ 删除确认',
+      { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'error' }
     )
-    const res = await adminNewApi.disableMajor(row.major_id)
-    if (res?.status === 200) { ElMessage.success('已停用'); fetchData() }
-    else ElMessage.error(res?.msg || '停用失败')
-  } catch { }
-}
-const handleEnable = async (row) => {
-  try {
-    await ElMessageBox.confirm(
-      `确认重新启用专业「${row.major_name}」？`,
-      '启用确认',
-      { confirmButtonText: '确认启用', cancelButtonText: '取消', type: 'info' }
-    )
-    const res = await adminNewApi.updateMajor(row.major_id, { major_name: row.major_name, department_id: row.department_id, status: 1 })
-    if (res?.status === 200) { ElMessage.success('已启用'); fetchData() }
-    else ElMessage.error(res?.msg || '启用失败')
+    const res = await adminNewApi.deleteMajor(row.majorId)
+    if (res?.status === 200) { ElMessage.success('已删除'); fetchData() }
+    else ElMessage.warning(res?.msg || '无法删除，请先解除关联')
   } catch { }
 }
 const handleSubmit = async () => {
@@ -127,10 +114,10 @@ const handleSubmit = async () => {
   try { await formRef.value.validate() } catch { return }
   submitting.value = true
   try {
-    const payload = { major_name: formData.major_name, department_id: formData.department_id, status: formData.status }
+    const payload = { majorName: formData.majorName, departmentId: formData.departmentId, status: formData.status }
     let res
     if (dialogType.value === 'add') res = await adminNewApi.addMajor(payload)
-    else res = await adminNewApi.updateMajor(formData.major_id, payload)
+    else res = await adminNewApi.updateMajor(formData.majorId, payload)
     if (res?.status === 200) { ElMessage.success(res.msg || '保存成功'); dialogVisible.value = false; fetchData() }
     else ElMessage.error(res?.msg || '保存失败')
   } catch (e) { ElMessage.error('保存失败') }
