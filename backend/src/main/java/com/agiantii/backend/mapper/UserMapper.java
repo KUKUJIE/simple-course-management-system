@@ -19,6 +19,9 @@ public interface UserMapper {
     @Update("UPDATE t_user SET status = 0 WHERE id = #{userId}")
     void disableUser(@Param("userId") Integer userId);
 
+    @Update("UPDATE t_user SET status = #{status} WHERE id = #{userId}")
+    void updateUserStatus(@Param("userId") Integer userId, @Param("status") Integer status);
+
     @Delete("delete from t_user where id=#{id}")
     void deleteUserNyId(int id);
     @Update("update t_user set password=#{password} where id=#{id}")

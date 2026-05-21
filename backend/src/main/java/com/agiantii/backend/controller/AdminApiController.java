@@ -323,7 +323,7 @@ public class AdminApiController {
 
         int enrolled = courseSectionMapper.countEnrollments(id);
         if (enrolled > 0) {
-            return R.error("该教学班存在 " + enrolled + " 条活跃选课记录，无法删除", 400);
+            return R.error("该教学班存在 " + enrolled + " 条选课记录，无法删除", 400);
         }
 
         courseSectionMapper.deleteSectionById(id);
@@ -900,6 +900,12 @@ public class AdminApiController {
         body.put("studentId", id);
         studentMapper.updateStudentAdmin(body);
 
+        // 同步 t_user 状态
+        Integer studentUserId = (Integer) existing.get("userId");
+        if (studentUserId != null) {
+            userMapper.updateUserStatus(studentUserId, toInt(body.get("status")));
+        }
+
         Map<String, Object> updated = studentMapper.selectByIdForAdmin(id);
         return R.success(updated, "学生修改成功");
     }
@@ -945,9 +951,9 @@ public class AdminApiController {
 
         if (studentMapper.selectByIdForAdmin(id) == null) return R.error("学生不存在", 404);
 
-        int refEnrollments = studentMapper.countReferencedEnrollments(id);
+        int refEnrollments = studentMapper.countAllEnrollments(id);
         if (refEnrollments > 0) {
-            return R.error("该学生存在 " + refEnrollments + " 条活跃选课记录，无法删除，请先停用", 400);
+            return R.error("该学生存在 " + refEnrollments + " 条选课记录，无法删除，请先停用", 400);
         }
 
         Integer userId = studentMapper.selectUserIdByStudentId(id);
@@ -1101,8 +1107,14 @@ public class AdminApiController {
         body.put("teacherId", id);
         teacherMapper.updateTeacherAdmin(body);
 
-        Map<String, Object> updated = teacherMapper.selectByIdForAdmin(id);
-        return R.success(updated, "教师修改成功");
+        // 同步 t_user 状态
+        Integer teacherUserId = (Integer) existing.get("userId");
+        if (teacherUserId != null) {
+            userMapper.updateUserStatus(teacherUserId, toInt(body.get("status")));
+        }
+
+        Map<String, Object> updatedTeacher = teacherMapper.selectByIdForAdmin(id);
+        return R.success(updatedTeacher, "教师修改成功");
     }
 
     @Transactional
@@ -1146,9 +1158,9 @@ public class AdminApiController {
 
         if (teacherMapper.selectByIdForAdmin(id) == null) return R.error("教师不存在", 404);
 
-        int refSections = teacherMapper.countReferencedSections(id);
+        int refSections = teacherMapper.countAllSections(id);
         if (refSections > 0) {
-            return R.error("该教师存在 " + refSections + " 个运行中的教学班，无法删除，请先停用", 400);
+            return R.error("该教师存在 " + refSections + " 个教学班记录，无法删除，请先停用", 400);
         }
 
         Integer userId = teacherMapper.selectUserIdByTeacherId(id);

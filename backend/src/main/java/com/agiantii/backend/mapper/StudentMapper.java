@@ -64,7 +64,7 @@ public interface StudentMapper {
 
     @Update("UPDATE t_student SET major_id = #{majorId}, student_no = #{studentNo}, " +
             "student_name = #{studentName}, gender = #{gender}, phone = #{phone}, " +
-            "email = #{email}, enrollment_year = #{enrollmentYear} " +
+            "email = #{email}, enrollment_year = #{enrollmentYear}, status = #{status} " +
             "WHERE student_id = #{studentId}")
     void updateStudentAdmin(Map<String, Object> student);
 
@@ -73,6 +73,10 @@ public interface StudentMapper {
 
     @Select("SELECT COUNT(*) FROM t_enrollment WHERE student_id = #{studentId} AND status = 1")
     int countReferencedEnrollments(@Param("studentId") Integer studentId);
+
+    /** 删除保护：检查全部选课记录（不限状态） */
+    @Select("SELECT COUNT(*) FROM t_enrollment WHERE student_id = #{studentId}")
+    int countAllEnrollments(@Param("studentId") Integer studentId);
 
     /** 查询指定前缀的最大序号，用于生成学号 */
     @Select("SELECT MAX(CAST(SUBSTRING(student_no, LENGTH(#{prefix})+1) AS UNSIGNED)) FROM t_student WHERE student_no LIKE CONCAT(#{prefix}, '%')")

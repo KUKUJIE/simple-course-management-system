@@ -69,7 +69,7 @@ public interface CourseMapper {
 
     @Update("UPDATE t_course SET course_code = #{courseCode}, course_name = #{name}, " +
             "credit = #{credit}, total_hours = #{totalHours}, course_type = #{courseType}, " +
-            "department_id = #{departmentId}, description = #{description} " +
+            "department_id = #{departmentId}, description = #{description}, status = #{status} " +
             "WHERE course_id = #{id}")
     void updateCourse(Map<String, Object> course);
 

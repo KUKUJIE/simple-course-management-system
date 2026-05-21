@@ -18,7 +18,7 @@ public interface DepartmentMapper {
     @Options(useGeneratedKeys = true, keyProperty = "departmentId")
     void insert(Department department);
 
-    @Update("UPDATE t_department SET department_code = #{departmentCode}, department_name = #{departmentName}, office_phone = #{officePhone} WHERE department_id = #{departmentId}")
+    @Update("UPDATE t_department SET department_code = #{departmentCode}, department_name = #{departmentName}, office_phone = #{officePhone}, status = #{status} WHERE department_id = #{departmentId}")
     void update(Department department);
 
     @Update("UPDATE t_department SET status = 0 WHERE department_id = #{departmentId}")

@@ -112,7 +112,7 @@ public interface CourseSectionMapper {
     @Delete("DELETE FROM t_course_section WHERE section_id = #{sectionId}")
     void deleteSectionById(@Param("sectionId") Integer sectionId);
 
-    @Select("SELECT COUNT(*) FROM t_enrollment WHERE section_id = #{sectionId} AND status = 1")
+    @Select("SELECT COUNT(*) FROM t_enrollment WHERE section_id = #{sectionId}")
     int countEnrollments(@Param("sectionId") Integer sectionId);
 
     @Select("SELECT selected_count FROM t_course_section WHERE section_id = #{sectionId}")

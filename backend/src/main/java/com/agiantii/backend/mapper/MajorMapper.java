@@ -28,7 +28,7 @@ public interface MajorMapper {
     @Options(useGeneratedKeys = true, keyProperty = "majorId")
     void insert(Major major);
 
-    @Update("UPDATE t_major SET department_id = #{departmentId}, major_code = #{majorCode}, major_name = #{majorName} WHERE major_id = #{majorId}")
+    @Update("UPDATE t_major SET department_id = #{departmentId}, major_code = #{majorCode}, major_name = #{majorName}, status = #{status} WHERE major_id = #{majorId}")
     void update(Major major);
 
     @Update("UPDATE t_major SET status = 0 WHERE major_id = #{majorId}")
