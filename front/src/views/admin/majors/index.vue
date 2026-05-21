@@ -9,9 +9,9 @@
     </div>
     <el-card class="data-card" v-loading="loading">
       <el-table :data="filteredData" style="width: 100%" empty-text="暂无专业数据">
-        <el-table-column prop="majorId" label="编号" min-width="100" align="center" />
-        <el-table-column prop="majorName" label="专业名称" min-width="200" />
-        <el-table-column prop="departmentName" label="所属院系" min-width="160" />
+        <el-table-column prop="major_id" label="编号" min-width="100" align="center" />
+        <el-table-column prop="major_name" label="专业名称" min-width="200" />
+        <el-table-column prop="department_name" label="所属院系" min-width="160" />
         <el-table-column label="状态" min-width="80" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
@@ -67,7 +67,7 @@ const rules = {
 const filteredData = computed(() => {
   if (!searchKeyword.value) return tableData.value
   const kw = searchKeyword.value.toLowerCase()
-  return tableData.value.filter(r => (r.majorName || '').toLowerCase().includes(kw))
+  return tableData.value.filter(r => (r.major_name || '').toLowerCase().includes(kw))
 })
 
 const fetchData = async () => {
@@ -91,20 +91,20 @@ const resetForm = () => { formRef.value?.resetFields(); Object.assign(formData, 
 const handleAdd = () => { dialogType.value = 'add'; resetForm(); dialogVisible.value = true }
 const handleEdit = async (row) => {
   dialogType.value = 'edit'
-  formData.majorId = row.majorId
-  formData.majorName = row.majorName
-  formData.departmentId = row.departmentId
+  formData.majorId = row.major_id
+  formData.majorName = row.major_name
+  formData.departmentId = row.department_id
   formData.status = row.status
   dialogVisible.value = true
 }
 const handleDelete = async (row) => {
   try {
     await ElMessageBox.confirm(
-      `确认删除专业「${row.majorName}」？\n\n⚠ 删除后数据不可恢复，关联学生数据也将受影响。`,
+      `确认删除专业「${row.major_name}」？\n\n⚠ 删除后数据不可恢复，关联学生数据也将受影响。`,
       '⚠ 删除确认',
       { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'error' }
     )
-    const res = await adminNewApi.deleteMajor(row.majorId)
+    const res = await adminNewApi.deleteMajor(row.major_id)
     if (res?.status === 200) { ElMessage.success('已删除'); fetchData() }
     else ElMessage.warning(res?.msg || '无法删除，请先解除关联')
   } catch { }
