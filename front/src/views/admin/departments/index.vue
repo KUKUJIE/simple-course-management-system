@@ -16,10 +16,10 @@
             <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" min-width="160" fixed="right" align="center">
+        <el-table-column label="操作" min-width="180" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-            <el-button v-if="row.status === 1" type="danger" link @click="handleDisable(row)">停用</el-button>
+            <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -80,13 +80,17 @@ const handleEdit = async (row) => {
   formData.status = row.status
   dialogVisible.value = true
 }
-const handleDisable = async (row) => {
+const handleDelete = async (row) => {
   try {
-    await ElMessageBox.confirm(`确定停用院系「${row.departmentName}」？`, '停用确认', { type: 'warning' })
-    const res = await adminNewApi.disableDepartment(row.departmentId)
-    if (res?.status === 200) { ElMessage.success('停用成功'); fetchData() }
-    else ElMessage.error(res?.msg || '停用失败')
-  } catch {}
+    await ElMessageBox.confirm(
+      `确认删除院系「${row.departmentName}」？\n\n⚠ 删除后数据不可恢复，下属专业也将受影响。`,
+      '⚠ 删除确认',
+      { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'error' }
+    )
+    const res = await adminNewApi.deleteDepartment(row.departmentId)
+    if (res?.status === 200) { ElMessage.success('已删除'); fetchData() }
+    else ElMessage.warning(res?.msg || '无法删除，请先解除关联')
+  } catch { }
 }
 const handleSubmit = async () => {
   if (!formRef.value) return
@@ -111,4 +115,5 @@ onMounted(fetchData)
 .page-header { margin-bottom: 20px; h2 { margin: 0; font-size: 20px; font-weight: 600; color: var(--el-text-color-primary); } }
 .action-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
 .data-card { border: 1px solid var(--el-border-color-darker); }
+:deep(.el-select) { --el-fill-color-blank: var(--input-bg, #313346); }
 </style>

@@ -46,6 +46,9 @@ public class UserController {
             if(userMapper.selectUserById(user.getId()) != null){
                 return R.error("id 已经存在，无法插入");
             }
+            if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
+                user.setUsername("user_" + user.getId());
+            }
             userMapper.insertUser(user);
             return R.success("插入成功");
     }

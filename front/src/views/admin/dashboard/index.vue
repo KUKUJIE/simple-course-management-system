@@ -112,9 +112,11 @@ const recentActivities = ref([
 const fetchStats = async () => {
   try {
     // 使用已有 API 获取课程和教学班数量
-    const [coursesRes, sectionsRes] = await Promise.all([
+    const [coursesRes, sectionsRes, studentsRes, teachersRes] = await Promise.all([
       adminNewApi.getCourseList(),
-      adminNewApi.getSectionList()
+      adminNewApi.getSectionList(),
+      adminNewApi.getStudentList(),
+      adminNewApi.getTeacherList()
     ])
     if (coursesRes?.status === 200) {
       const courses = Array.isArray(coursesRes.data) ? coursesRes.data : []
@@ -125,11 +127,17 @@ const fetchStats = async () => {
       const sections = Array.isArray(sectionsRes.data) ? sectionsRes.data : []
       // sections 数据已通过 getSectionList 获取，可用于后续扩展
     }
-    // 学生/教师统计留待第二阶段接入
-    stats.totalStudents = 0
-    stats.newStudents = 0
-    stats.totalTeachers = 0
-    stats.newTeachers = 0
+    // 学生/教师从实际接口获取
+    if (studentsRes?.status === 200) {
+      const students = Array.isArray(studentsRes.data) ? studentsRes.data : []
+      stats.totalStudents = students.length
+      stats.newStudents = students.filter(s => s.status === 1).length
+    }
+    if (teachersRes?.status === 200) {
+      const teachers = Array.isArray(teachersRes.data) ? teachersRes.data : []
+      stats.totalTeachers = teachers.length
+      stats.newTeachers = teachers.filter(t => t.status === 1).length
+    }
 
     // 成绩统计留待第二阶段接入
     stats.averageScore = 85.5

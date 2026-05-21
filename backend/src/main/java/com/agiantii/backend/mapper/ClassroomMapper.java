@@ -18,7 +18,7 @@ public interface ClassroomMapper {
     @Options(useGeneratedKeys = true, keyProperty = "classroomId")
     void insert(Classroom classroom);
 
-    @Update("UPDATE t_classroom SET building = #{building}, room_no = #{roomNo}, capacity = #{capacity}, remark = #{remark} WHERE classroom_id = #{classroomId}")
+    @Update("UPDATE t_classroom SET building = #{building}, room_no = #{roomNo}, capacity = #{capacity}, remark = #{remark}, status = #{status} WHERE classroom_id = #{classroomId}")
     void update(Classroom classroom);
 
     @Update("UPDATE t_classroom SET status = 0 WHERE classroom_id = #{classroomId}")

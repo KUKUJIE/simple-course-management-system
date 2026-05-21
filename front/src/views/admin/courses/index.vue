@@ -25,7 +25,7 @@
         <el-table-column label="操作" min-width="180" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-            <el-button v-if="row.status === 1" type="danger" link @click="handleDisable(row)">停用</el-button>
+            <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -64,6 +64,7 @@ import { adminNewApi } from '@/api/new-api'
 
 const loading = ref(false), submitting = ref(false), dialogVisible = ref(false), dialogType = ref('add')
 const formRef = ref(null), searchKeyword = ref(''), tableData = ref([])
+const getOriginalStatus = ref(null)
 const formData = reactive({ id: null, courseCode: '', name: '', credit: 2, status: 1 })
 const rules = {
   courseCode: [{ required: true, message: '请输入课程编码', trigger: 'blur' }],
@@ -87,7 +88,7 @@ const fetchData = async () => {
   finally { loading.value = false }
 }
 
-const resetForm = () => { formRef.value?.resetFields(); Object.assign(formData, { id: null, courseCode: '', name: '', credit: 2, status: 1 }) }
+const resetForm = () => { formRef.value?.resetFields(); Object.assign(formData, { id: null, courseCode: '', name: '', credit: 2, status: 1 }); getOriginalStatus.value = null }
 const handleAdd = () => { dialogType.value = 'add'; resetForm(); dialogVisible.value = true }
 const handleEdit = (row) => {
   dialogType.value = 'edit'
@@ -96,19 +97,32 @@ const handleEdit = (row) => {
   formData.name = row.name || ''
   formData.credit = row.credit || 2
   formData.status = row.status
+  getOriginalStatus.value = row.status
   dialogVisible.value = true
 }
-const handleDisable = async (row) => {
+const handleDelete = async (row) => {
   try {
-    await ElMessageBox.confirm(`确定停用课程「${row.name}」？`, '停用确认', { type: 'warning' })
-    const res = await adminNewApi.disableCourse(row.id)
-    if (res?.status === 200) { ElMessage.success('课程已停用'); fetchData() }
-    else ElMessage.error(res?.msg || '停用失败')
-  } catch {}
+    await ElMessageBox.confirm(
+      `确认删除课程「${row.name}（${row.courseCode}）」？\n\n⚠ 删除后数据不可恢复，关联教学班也将受影响。`,
+      '⚠ 删除确认',
+      { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'error' }
+    )
+    const res = await adminNewApi.deleteCourse(row.id)
+    if (res?.status === 200) { ElMessage.success('已删除'); fetchData() }
+    else ElMessage.warning(res?.msg || '无法删除，请先解除关联')
+  } catch { }
 }
 const handleSubmit = async () => {
   if (!formRef.value) return
   try { await formRef.value.validate() } catch { return }
+  if (dialogType.value === 'edit' && getOriginalStatus.value !== formData.status) {
+    const newStatusText = formData.status === 1 ? '启用' : '停用'
+    try {
+      await ElMessageBox.confirm(`确认将该课程状态改为"${newStatusText}"？`, '状态变更确认', {
+        confirmButtonText: '确认变更', cancelButtonText: '取消', type: 'warning'
+      })
+    } catch { return }
+  }
   submitting.value = true
   try {
     const payload = { courseCode: formData.courseCode, name: formData.name, credit: formData.credit, status: formData.status }
@@ -130,4 +144,5 @@ onMounted(fetchData)
 .page-header { margin-bottom: 20px; h2 { margin: 0; font-size: 20px; font-weight: 600; color: var(--el-text-color-primary); } }
 .action-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
 .data-card { border: 1px solid var(--el-border-color-darker); }
+:deep(.el-select) { --el-fill-color-blank: var(--input-bg, #313346); }
 </style>

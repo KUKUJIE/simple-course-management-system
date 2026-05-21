@@ -28,17 +28,23 @@
             <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '启用' : '关闭' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" min-width="180" fixed="right" align="center">
+        <el-table-column label="操作" min-width="200" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-            <el-button v-if="row.status === 1" type="warning" link @click="handleClose(row)">关闭</el-button>
+            <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="dialogType === 'add' ? '新增教学班' : '编辑教学班'" width="600px" @close="resetForm">
-      <el-form ref="formRef" :model="formData" :rules="rules" label-width="80px">
+      <el-form ref="formRef" :model="formData" :rules="rules" label-width="100px">
+        <el-form-item v-if="dialogType === 'add'" label="教学班编码">
+          <el-input v-model="formData.sectionCode" placeholder="留空则由系统自动生成，如 MATH-101-01" maxlength="50" />
+          <div style="font-size:12px;color:var(--el-text-color-secondary);margin-top:4px">
+            建议留空，系统将按 课程编码-序号 自动生成唯一教学班编码
+          </div>
+        </el-form-item>
         <el-form-item label="课程" prop="courseId">
           <el-select v-model="formData.courseId" placeholder="请选择课程" style="width: 100%" filterable>
             <el-option v-for="c in courseOptions" :key="c.id || c.courseId" :label="c.name || c.courseName" :value="c.id || c.courseId" />
@@ -100,11 +106,12 @@ const teacherOptions = ref([])
 const classroomOptions = ref([])
 
 const formData = reactive({
-  sectionId: null, courseId: null, teacherId: null, classroomId: null,
+  sectionId: null, sectionCode: '', courseId: null, teacherId: null, classroomId: null,
   semester: '', capacityLimit: 30, status: 1
 })
 
 const rules = {
+  sectionCode: [{ required: false, message: '请输入教学班编码', trigger: 'blur' }],
   courseId: [{ required: true, message: '请选择课程', trigger: 'change' }],
   teacherId: [{ required: true, message: '请选择教师', trigger: 'change' }],
   classroomId: [{ required: true, message: '请选择教室', trigger: 'change' }],
@@ -152,7 +159,7 @@ const fetchData = async () => {
 
 const resetForm = () => {
   formRef.value?.resetFields()
-  Object.assign(formData, { sectionId: null, courseId: null, teacherId: null, classroomId: null, semester: '', capacityLimit: 30, status: 1 })
+  Object.assign(formData, { sectionId: null, sectionCode: '', courseId: null, teacherId: null, classroomId: null, semester: '', capacityLimit: 30, status: 1 })
 }
 
 const handleAdd = () => { dialogType.value = 'add'; resetForm(); dialogVisible.value = true }
@@ -174,14 +181,41 @@ const handleEdit = async (row) => {
     }
   } catch (e) { ElMessage.error('获取教学班详情失败') }
 }
-
 const handleClose = async (row) => {
   try {
-    await ElMessageBox.confirm(`确定关闭教学班「${row.courseName || row.sectionCode}」？关闭后学生将无法选课。`, '关闭确认', { type: 'warning' })
+    await ElMessageBox.confirm(
+      `确认关闭教学班「${row.sectionCode}」？\n\n关闭后该教学班将不再接受选课。`,
+      '关闭确认',
+      { confirmButtonText: '确认关闭', cancelButtonText: '取消', type: 'warning' }
+    )
     const res = await adminNewApi.closeSection(row.sectionId)
-    if (res?.status === 200) { ElMessage.success('关闭成功'); fetchData() }
+    if (res?.status === 200) { ElMessage.success('已关闭'); fetchData() }
     else ElMessage.error(res?.msg || '关闭失败')
-  } catch {}
+  } catch { }
+}
+const handleOpen = async (row) => {
+  try {
+    await ElMessageBox.confirm(
+      `确认重新开启教学班「${row.sectionCode}」？\n\n开启后将恢复选课。`,
+      '开启确认',
+      { confirmButtonText: '确认开启', cancelButtonText: '取消', type: 'info' }
+    )
+    const res = await adminNewApi.updateSection(row.sectionId, { status: 1 })
+    if (res?.status === 200) { ElMessage.success('已开启'); fetchData() }
+    else ElMessage.error(res?.msg || '开启失败')
+  } catch { }
+}
+const handleDelete = async (row) => {
+  try {
+    await ElMessageBox.confirm(
+      `确认删除教学班「${row.sectionCode}」？\n\n⚠ 安全删除规则：\n· 必须先确保该教学班已无关联选课记录和成绩\n· 删除后数据不可恢复\n· 建议优先使用"关闭"代替删除`,
+      '⚠ 安全删除确认',
+      { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'error' }
+    )
+    const res = await adminNewApi.deleteSection(row.sectionId)
+    if (res?.status === 200) { ElMessage.success('已删除'); fetchData() }
+    else ElMessage.warning(res?.msg || '无法删除，请先解除业务关联')
+  } catch { }
 }
 
 const handleSubmit = async () => {
@@ -196,6 +230,9 @@ const handleSubmit = async () => {
       semester: formData.semester,
       capacityLimit: formData.capacityLimit,
       status: formData.status
+    }
+    if (dialogType.value === 'add') {
+      payload.sectionCode = formData.sectionCode
     }
     let res
     if (dialogType.value === 'add') {
@@ -224,4 +261,30 @@ onMounted(() => { loadOptions(); fetchData() })
 .page-header { margin-bottom: 20px; h2 { margin: 0; font-size: 20px; font-weight: 600; color: var(--el-text-color-primary); } }
 .search-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
 .data-card { border: 1px solid var(--el-border-color-darker); }
+:deep(.el-select) { --el-fill-color-blank: var(--input-bg, #313346); }
+
+// 固定列重影消除 — 教学班页专项修复
+:deep(.el-table) {
+  .el-table__fixed-right,
+  .el-table__fixed {
+    box-shadow: none !important;
+    background-color: var(--card-bg) !important;
+  }
+  .el-table__fixed-right::before,
+  .el-table__fixed::before {
+    display: none !important;
+    content: none !important;
+  }
+  .el-table__fixed-right-patch {
+    background-color: var(--secondary-bg) !important;
+    border-left: 1px solid var(--border-color) !important;
+  }
+  .el-table__fixed-body-wrapper {
+    background-color: var(--card-bg) !important;
+  }
+  .el-table__fixed-header-wrapper th,
+  .el-table__fixed-body-wrapper td {
+    background-color: var(--card-bg) !important;
+  }
+}
 </style>
