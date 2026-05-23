@@ -30,6 +30,15 @@ public interface DepartmentMapper {
     @Select("SELECT COUNT(*) FROM t_teacher WHERE department_id = #{departmentId} AND status = 1")
     int countReferencedTeachers(@Param("departmentId") Integer departmentId);
 
+    @Select("SELECT COUNT(*) FROM t_major WHERE department_id = #{departmentId}")
+    int countAllMajorsByDeptId(@Param("departmentId") Integer departmentId);
+
+    @Select("SELECT COUNT(*) FROM t_teacher WHERE department_id = #{departmentId}")
+    int countAllTeachersByDeptId(@Param("departmentId") Integer departmentId);
+
+    @Delete("DELETE FROM t_department WHERE department_id = #{departmentId}")
+    void deleteById(@Param("departmentId") Integer departmentId);
+
     @Select("SELECT department_id, department_code, department_name, office_phone, status FROM t_department WHERE status = 1 ORDER BY department_id")
     List<Department> selectActiveAll();
 }

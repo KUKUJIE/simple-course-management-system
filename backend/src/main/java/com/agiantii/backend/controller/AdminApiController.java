@@ -184,6 +184,30 @@ public class AdminApiController {
         return R.success("课程已停用");
     }
 
+    @Transactional
+    @DeleteMapping("/courses/{id}")
+    @ApiOperation("管理员-删除课程（仅当无关联教学班时）")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "课程ID", required = true, paramType = "path"),
+            @ApiImplicitParam(name = "Authorization", value = "Bearer {token}", required = true, dataType = "string", paramType = "header")
+    })
+    public R<String> deleteCourse(
+            @PathVariable Integer id,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (requireAdmin(authHeader) == null) return R.error("未登录或非管理员", 401);
+        log.info("DELETE /admin/courses/{}", id);
+
+        if (courseMapper.selectByIdForAdmin(id) == null) return R.error("课程不存在", 404);
+
+        int refSections = courseMapper.countAllSectionsByCourseId(id);
+        if (refSections > 0) {
+            return R.error("该课程下存在 " + refSections + " 个教学班，无法删除", 400);
+        }
+
+        courseMapper.deleteCourseById(id);
+        return R.success("课程已删除");
+    }
+
     // ==================== 教学班管理 ====================
 
     @GetMapping("/sections")
@@ -420,6 +444,13 @@ public class AdminApiController {
             return R.error("院系名称不能为空", 400);
         }
         if (department.getStatus() == null) department.setStatus(1);
+        // 如果前端未传 departmentCode，自动生成
+        if (department.getDepartmentCode() == null || department.getDepartmentCode().trim().isEmpty()) {
+            List<com.agiantii.backend.pojo.Department> all = departmentMapper.selectAll();
+            int maxId = all.stream()
+                    .mapToInt(com.agiantii.backend.pojo.Department::getDepartmentId).max().orElse(0);
+            department.setDepartmentCode("DEPT" + (maxId + 1));
+        }
         departmentMapper.insert(department);
         return R.success(department, "院系新增成功");
     }
@@ -472,6 +503,30 @@ public class AdminApiController {
         return R.success("院系已停用");
     }
 
+    @Transactional
+    @DeleteMapping("/departments/{id}")
+    @ApiOperation("管理员-删除院系（仅当无关联专业和教师时）")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "院系ID", required = true, paramType = "path"),
+            @ApiImplicitParam(name = "Authorization", value = "Bearer {token}", required = true, dataType = "string", paramType = "header")
+    })
+    public R<String> deleteDepartment(
+            @PathVariable Integer id,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (requireAdmin(authHeader) == null) return R.error("未登录或非管理员", 401);
+        log.info("DELETE /admin/departments/{}", id);
+        if (departmentMapper.selectById(id) == null) return R.error("院系不存在", 404);
+
+        int refMajors = departmentMapper.countAllMajorsByDeptId(id);
+        int refTeachers = departmentMapper.countAllTeachersByDeptId(id);
+        if (refMajors > 0 || refTeachers > 0) {
+            return R.error("该院系下存在 " + refMajors + " 个专业、" + refTeachers + " 名教师，无法删除", 400);
+        }
+
+        departmentMapper.deleteById(id);
+        return R.success("院系已删除");
+    }
+
     // ==================== 专业管理 ====================
 
     @GetMapping("/majors")
@@ -522,6 +577,13 @@ public class AdminApiController {
             return R.error("所属院系不存在", 400);
         }
         if (major.getStatus() == null) major.setStatus(1);
+        // 如果前端未传 majorCode，自动生成
+        if (major.getMajorCode() == null || major.getMajorCode().trim().isEmpty()) {
+            List<Map<String, Object>> all = majorMapper.selectAllWithDept();
+            int maxId = all.stream()
+                    .mapToInt(m -> (Integer) m.get("major_id")).max().orElse(0);
+            major.setMajorCode("MAJ" + (maxId + 1));
+        }
         majorMapper.insert(major);
         return R.success(major, "专业新增成功");
     }
@@ -574,6 +636,29 @@ public class AdminApiController {
 
         majorMapper.disable(id);
         return R.success("专业已停用");
+    }
+
+    @Transactional
+    @DeleteMapping("/majors/{id}")
+    @ApiOperation("管理员-删除专业（仅当无关联学生时）")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "专业ID", required = true, paramType = "path"),
+            @ApiImplicitParam(name = "Authorization", value = "Bearer {token}", required = true, dataType = "string", paramType = "header")
+    })
+    public R<String> deleteMajor(
+            @PathVariable Integer id,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (requireAdmin(authHeader) == null) return R.error("未登录或非管理员", 401);
+        log.info("DELETE /admin/majors/{}", id);
+        if (majorMapper.selectById(id) == null) return R.error("专业不存在", 404);
+
+        int refStudents = majorMapper.countAllStudentsByMajorId(id);
+        if (refStudents > 0) {
+            return R.error("该专业下存在 " + refStudents + " 名学生，无法删除", 400);
+        }
+
+        majorMapper.deleteById(id);
+        return R.success("专业已删除");
     }
 
     // ==================== 教室管理 ====================
@@ -674,6 +759,29 @@ public class AdminApiController {
 
         classroomMapper.disable(id);
         return R.success("教室已停用");
+    }
+
+    @Transactional
+    @DeleteMapping("/classrooms/{id}")
+    @ApiOperation("管理员-删除教室（仅当无关联教学班时）")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "教室ID", required = true, paramType = "path"),
+            @ApiImplicitParam(name = "Authorization", value = "Bearer {token}", required = true, dataType = "string", paramType = "header")
+    })
+    public R<String> deleteClassroom(
+            @PathVariable Integer id,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (requireAdmin(authHeader) == null) return R.error("未登录或非管理员", 401);
+        log.info("DELETE /admin/classrooms/{}", id);
+        if (classroomMapper.selectById(id) == null) return R.error("教室不存在", 404);
+
+        int refSections = classroomMapper.countAllSectionsByClassroomId(id);
+        if (refSections > 0) {
+            return R.error("该教室下存在 " + refSections + " 个教学班，无法删除", 400);
+        }
+
+        classroomMapper.deleteById(id);
+        return R.success("教室已删除");
     }
 
     // ==================== 下拉数据接口 ====================

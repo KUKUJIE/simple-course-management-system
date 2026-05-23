@@ -79,6 +79,12 @@ public interface CourseMapper {
     @Select("SELECT COUNT(*) FROM t_course_section WHERE course_id = #{courseId} AND status = 1")
     int countReferencedSections(@Param("courseId") Integer courseId);
 
+    @Select("SELECT COUNT(*) FROM t_course_section WHERE course_id = #{courseId}")
+    int countAllSectionsByCourseId(@Param("courseId") Integer courseId);
+
+    @Delete("DELETE FROM t_course WHERE course_id = #{courseId}")
+    void deleteCourseById(@Param("courseId") Integer courseId);
+
     @Select("SELECT course_id AS id, course_code AS courseCode, course_name AS name " +
             "FROM t_course WHERE status = 1 ORDER BY course_id")
     List<Map<String, Object>> selectActiveForOptions();

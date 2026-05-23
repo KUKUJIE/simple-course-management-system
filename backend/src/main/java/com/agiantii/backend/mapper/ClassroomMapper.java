@@ -27,6 +27,12 @@ public interface ClassroomMapper {
     @Select("SELECT COUNT(*) FROM t_course_section WHERE classroom_id = #{classroomId} AND status = 1")
     int countReferencedSections(@Param("classroomId") Integer classroomId);
 
+    @Select("SELECT COUNT(*) FROM t_course_section WHERE classroom_id = #{classroomId}")
+    int countAllSectionsByClassroomId(@Param("classroomId") Integer classroomId);
+
+    @Delete("DELETE FROM t_classroom WHERE classroom_id = #{classroomId}")
+    void deleteById(@Param("classroomId") Integer classroomId);
+
     @Select("SELECT classroom_id, building, room_no, capacity, status FROM t_classroom WHERE status = 1 ORDER BY classroom_id")
     List<Classroom> selectActiveAll();
 }

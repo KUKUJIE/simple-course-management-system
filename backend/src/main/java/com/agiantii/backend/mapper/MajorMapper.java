@@ -37,6 +37,12 @@ public interface MajorMapper {
     @Select("SELECT COUNT(*) FROM t_student WHERE major_id = #{majorId} AND status = 1")
     int countReferencedStudents(@Param("majorId") Integer majorId);
 
+    @Select("SELECT COUNT(*) FROM t_student WHERE major_id = #{majorId}")
+    int countAllStudentsByMajorId(@Param("majorId") Integer majorId);
+
+    @Delete("DELETE FROM t_major WHERE major_id = #{majorId}")
+    void deleteById(@Param("majorId") Integer majorId);
+
     @Select("SELECT major_id, major_code, major_name, status FROM t_major WHERE status = 1 ORDER BY major_id")
     List<Major> selectActiveAll();
 }
