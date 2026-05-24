@@ -41,6 +41,11 @@
         <el-form-item label="学分" prop="credit">
           <el-input-number v-model="formData.credit" :min="0.5" :max="20" :step="0.5" style="width: 100%" />
         </el-form-item>
+        <el-form-item label="所属院系" prop="departmentId">
+          <el-select v-model="formData.departmentId" style="width: 100%" placeholder="请选择院系">
+            <el-option v-for="d in deptOptions" :key="d.departmentId" :label="d.departmentName" :value="d.departmentId" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-select v-model="formData.status" style="width: 100%">
             <el-option label="启用" :value="1" /><el-option label="停用" :value="0" />
@@ -62,13 +67,14 @@ import { Plus, Search } from '@element-plus/icons-vue'
 import { adminNewApi } from '@/api/new-api'
 
 const loading = ref(false), submitting = ref(false), dialogVisible = ref(false), dialogType = ref('add')
-const formRef = ref(null), searchKeyword = ref(''), tableData = ref([])
+const formRef = ref(null), searchKeyword = ref(''), tableData = ref([]), deptOptions = ref([])
 const getOriginalStatus = ref(null)
-const formData = reactive({ id: null, courseCode: '', name: '', credit: 2, status: 1 })
+const formData = reactive({ id: null, courseCode: '', name: '', credit: 2, departmentId: null, status: 1 })
 const rules = {
   courseCode: [{ required: true, message: '请输入课程编码', trigger: 'blur' }],
   name: [{ required: true, message: '请输入课程名称', trigger: 'blur' }],
-  credit: [{ required: true, message: '请选择学分', trigger: 'change' }]
+  credit: [{ required: true, message: '请选择学分', trigger: 'change' }],
+  departmentId: [{ required: true, message: '请选择所属院系', trigger: 'change' }]
 }
 
 const filteredData = computed(() => {
@@ -87,7 +93,14 @@ const fetchData = async () => {
   finally { loading.value = false }
 }
 
-const resetForm = () => { formRef.value?.resetFields(); Object.assign(formData, { id: null, courseCode: '', name: '', credit: 2, status: 1 }); getOriginalStatus.value = null }
+const loadDepts = async () => {
+  try {
+    const res = await adminNewApi.getDepartmentOptions()
+    if (res?.status === 200) deptOptions.value = res.data || []
+  } catch { /* ignore */ }
+}
+
+const resetForm = () => { formRef.value?.resetFields(); Object.assign(formData, { id: null, courseCode: '', name: '', credit: 2, departmentId: null, status: 1 }); getOriginalStatus.value = null }
 const handleAdd = () => { dialogType.value = 'add'; resetForm(); dialogVisible.value = true }
 const handleEdit = (row) => {
   dialogType.value = 'edit'
@@ -95,6 +108,7 @@ const handleEdit = (row) => {
   formData.courseCode = row.courseCode || ''
   formData.name = row.name || ''
   formData.credit = row.credit || 2
+  formData.departmentId = row.departmentId || null
   formData.status = row.status
   getOriginalStatus.value = row.status
   dialogVisible.value = true
@@ -112,7 +126,7 @@ const handleSubmit = async () => {
   }
   submitting.value = true
   try {
-    const payload = { courseCode: formData.courseCode, name: formData.name, credit: formData.credit, status: formData.status }
+    const payload = { courseCode: formData.courseCode, name: formData.name, credit: formData.credit, departmentId: formData.departmentId, status: formData.status }
     let res
     if (dialogType.value === 'add') res = await adminNewApi.addCourse(payload)
     else res = await adminNewApi.updateCourse(formData.id, payload)
@@ -122,7 +136,7 @@ const handleSubmit = async () => {
   finally { submitting.value = false }
 }
 
-onMounted(fetchData)
+onMounted(() => { fetchData(); loadDepts() })
 </script>
 
 <style lang="scss" scoped>
