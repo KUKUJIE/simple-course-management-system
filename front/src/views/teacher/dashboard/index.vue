@@ -46,7 +46,7 @@
         </div>
       </template>
 
-      <el-table :data="courseList" style="width: 100%">
+      <el-table :data="dashboardPagedData" style="width: 100%">
         <el-table-column prop="name" label="课程名称" min-width="180" />
         <el-table-column prop="credit" label="学分" width="80" align="center" />
         <el-table-column label="选课人数" width="110" align="center">
@@ -75,12 +75,23 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="pagination-section">
+        <el-pagination
+          v-model:current-page="dashboardCurrentPage"
+          v-model:page-size="dashboardPageSize"
+          :page-sizes="[10, 20, 30, 50]"
+          :total="courseList.length"
+          layout="total, sizes, prev, pager, next"
+          background
+        />
+      </div>
     </el-card>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { teacherNewApi } from '@/api/new-api'
 import './style.scss'
@@ -100,6 +111,13 @@ const stats = reactive({
 
 // 课程列表
 const courseList = ref([])
+const dashboardPageSize = ref(10)
+const dashboardCurrentPage = ref(1)
+
+const dashboardPagedData = computed(() => {
+  const start = (dashboardCurrentPage.value - 1) * dashboardPageSize.value
+  return courseList.value.slice(start, start + dashboardPageSize.value)
+})
 
 // Canvas引用（已废弃）
 

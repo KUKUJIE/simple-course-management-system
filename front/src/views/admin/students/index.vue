@@ -19,7 +19,7 @@
     </div>
 
     <el-card class="data-card" v-loading="loading">
-      <el-table :data="filteredData" style="width: 100%" empty-text="暂无学生数据">
+      <el-table :data="pagedData" style="width: 100%" empty-text="暂无学生数据">
         <el-table-column prop="studentNo" label="学号" min-width="120" align="center" />
         <el-table-column prop="studentName" label="姓名" min-width="140" />
         <el-table-column prop="gender" label="性别" width="70" align="center" />
@@ -36,6 +36,17 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="pagination">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 30, 50, 100]"
+          :total="filteredData.length"
+          layout="total, sizes, prev, pager, next"
+          background
+        />
+      </div>
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="dialogType === 'add' ? '添加学生' : '编辑学生'" width="560px" @close="resetForm">
@@ -102,6 +113,9 @@ const rules = {
   status: [{ required: true, message: '请选择状态', trigger: 'change' }]
 }
 
+const currentPage = ref(1)
+const pageSize = ref(10)
+
 const filteredData = computed(() => {
   let list = tableData.value
   if (searchKeyword.value) {
@@ -114,6 +128,12 @@ const filteredData = computed(() => {
   return list
 })
 
+// 前端分页切片
+const pagedData = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredData.value.slice(start, start + pageSize.value)
+})
+
 const loadMajors = async () => {
   try {
     const res = await adminNewApi.getMajorOptions()
@@ -124,6 +144,7 @@ const loadMajors = async () => {
 const fetchData = async () => {
   try {
     loading.value = true
+    currentPage.value = 1
     const params = {}
     if (filterMajorId.value) params.majorId = filterMajorId.value
     if (filterStatus.value !== null && filterStatus.value !== '') params.status = filterStatus.value

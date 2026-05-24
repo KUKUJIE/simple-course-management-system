@@ -111,14 +111,19 @@ const maxSelection = 6
 const sectionList = ref([])
 const selectedCount = computed(() => sectionList.value.filter(s => s.selected).length)
 
-// 获取教学班列表
-const fetchSections = async () => {
+// 获取教学班列表（真正使用分页参数）
+const fetchSections = async (resetPage = false) => {
   try {
     loading.value = true
-    const res = await sectionApi.getSections({ page: 1, pageSize: 100, status: 1 })
+    if (resetPage) currentPage.value = 1
+    const res = await sectionApi.getSections({
+      page: currentPage.value,
+      pageSize: pageSize.value,
+      status: 1
+    })
     if (res && (res.code === 200 || res.status === 200)) {
-      const data = res.data?.list || res.data || []
-      sectionList.value = data.map(s => ({
+      const list = res.data?.list || res.data || []
+      sectionList.value = list.map(s => ({
         sectionId: s.sectionId,
         sectionCode: s.sectionCode,
         semester: s.semester,
@@ -131,7 +136,8 @@ const fetchSections = async () => {
         remaining: s.remaining,
         selected: false
       }))
-      total.value = data.length
+      // 使用后端返回的真实 total
+      total.value = res.data?.total ?? list.length
     }
   } catch (error) {
     console.error('获取教学班列表失败:', error)
@@ -192,12 +198,18 @@ const handleDrop = async (section) => {
   } catch (e) { if (e !== 'cancel') { console.error(e); ElMessage.error('退课失败') } }
 }
 
-// 搜索
+// 搜索（前端筛选，先取全部数据再过滤）
 const handleSearch = async () => {
-  if (!filterForm.courseName && !filterForm.teacherName) { await fetchSections(); await fetchMySelected(); return }
+  if (!filterForm.courseName && !filterForm.teacherName) {
+    currentPage.value = 1
+    await fetchSections()
+    await fetchMySelected()
+    return
+  }
   loading.value = true
   try {
-    const res = await sectionApi.getSections({ page: 1, pageSize: 200 })
+    // 搜索时拉取全量数据进行前端筛选
+    const res = await sectionApi.getSections({ page: 1, pageSize: 9999, status: 1 })
     let data = res.data?.list || res.data || []
     if (filterForm.courseName) data = data.filter(s => (s.courseName || '').includes(filterForm.courseName))
     if (filterForm.teacherName) data = data.filter(s => (s.teacherName || '').includes(filterForm.teacherName))
@@ -209,13 +221,14 @@ const handleSearch = async () => {
       remaining: s.remaining, selected: false, enrollmentId: null
     }))
     total.value = data.length
+    currentPage.value = 1
   } finally { loading.value = false }
   await fetchMySelected()
 }
 
 const resetForm = () => { filterForm.courseName = ''; filterForm.teacherName = ''; handleSearch() }
-const handleSizeChange = () => fetchSections()
-const handleCurrentChange = () => fetchSections()
+const handleSizeChange = () => { currentPage.value = 1; fetchSections() }
+const handleCurrentChange = () => { fetchSections() }
 
 onMounted(async () => { await fetchSections(); await fetchMySelected() })
 </script> 

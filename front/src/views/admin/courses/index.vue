@@ -10,7 +10,7 @@
     </div>
 
     <el-card class="data-card" v-loading="loading">
-      <el-table :data="filteredData" style="width: 100%" empty-text="暂无课程数据">
+      <el-table :data="pagedData" style="width: 100%" empty-text="暂无课程数据">
         <el-table-column prop="courseCode" label="课程编码" min-width="130" />
         <el-table-column prop="name" label="课程名称" min-width="180" />
         <el-table-column prop="credit" label="学分" min-width="80" align="center" />
@@ -28,6 +28,17 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="pagination">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 30, 50]"
+          :total="filteredData.length"
+          layout="total, sizes, prev, pager, next"
+          background
+        />
+      </div>
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="dialogType==='add'?'新增课程':'编辑课程'" width="520px" @close="resetForm">
@@ -77,14 +88,23 @@ const rules = {
   departmentId: [{ required: true, message: '请选择所属院系', trigger: 'change' }]
 }
 
+const currentPage = ref(1)
+const pageSize = ref(10)
+
 const filteredData = computed(() => {
   if (!searchKeyword.value) return tableData.value
   const kw = searchKeyword.value.toLowerCase()
   return tableData.value.filter(r => (r.name||'').toLowerCase().includes(kw) || (r.courseCode||'').toLowerCase().includes(kw))
 })
 
+const pagedData = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredData.value.slice(start, start + pageSize.value)
+})
+
 const fetchData = async () => {
   loading.value = true
+  currentPage.value = 1
   try {
     const res = await adminNewApi.getCourseList()
     if (res?.status === 200) tableData.value = res.data || []

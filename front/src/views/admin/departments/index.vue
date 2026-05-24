@@ -8,7 +8,7 @@
       <el-button type="primary" @click="handleAdd"><el-icon><Plus /></el-icon>新增院系</el-button>
     </div>
     <el-card class="data-card" v-loading="loading">
-      <el-table :data="filteredData" style="width: 100%" empty-text="暂无院系数据">
+      <el-table :data="pagedData" style="width: 100%" empty-text="暂无院系数据">
         <el-table-column prop="departmentId" label="编号" min-width="100" align="center" />
         <el-table-column prop="departmentName" label="院系名称" min-width="200" />
         <el-table-column label="状态" min-width="80" align="center">
@@ -22,6 +22,17 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="pagination">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 30, 50]"
+          :total="filteredData.length"
+          layout="total, sizes, prev, pager, next"
+          background
+        />
+      </div>
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="dialogType === 'add' ? '新增院系' : '编辑院系'" width="500px" @close="resetForm">
@@ -54,14 +65,23 @@ const formRef = ref(null), searchKeyword = ref(''), tableData = ref([])
 const formData = reactive({ departmentId: null, departmentName: '', status: 1 })
 const rules = { departmentName: [{ required: true, message: '请输入院系名称', trigger: 'blur' }] }
 
+const currentPage = ref(1)
+const pageSize = ref(10)
+
 const filteredData = computed(() => {
   if (!searchKeyword.value) return tableData.value
   const kw = searchKeyword.value.toLowerCase()
   return tableData.value.filter(r => (r.departmentName || '').toLowerCase().includes(kw))
 })
 
+const pagedData = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredData.value.slice(start, start + pageSize.value)
+})
+
 const fetchData = async () => {
   loading.value = true
+  currentPage.value = 1
   try {
     const res = await adminNewApi.getDepartmentList()
     if (res?.status === 200) tableData.value = res.data || []

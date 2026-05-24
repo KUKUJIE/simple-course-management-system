@@ -58,7 +58,7 @@
       </template>
 
       <el-table
-        :data="gradeList"
+        :data="pagedData"
         v-loading="loading"
         stripe
         style="width: 100%"
@@ -108,14 +108,21 @@
       </el-table>
 
       <div class="pagination">
-        <span class="total-info">共 {{ gradeList.length }} 条记录</span>
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 30, 50]"
+          :total="gradeList.length"
+          layout="total, sizes, prev, pager, next"
+          background
+        />
       </div>
     </el-card>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { ArrowUp, ArrowDown } from '@element-plus/icons-vue'
 import { enrollmentApi } from '@/api/new-api'
@@ -134,9 +141,17 @@ const stats = reactive({
   excellentCourses: 0
 })
 
+const currentPage = ref(1)
+const pageSize = ref(10)
+
 // 成绩列表
 const gradeList = ref([])
 const loading = ref(false)
+
+const pagedData = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return gradeList.value.slice(start, start + pageSize.value)
+})
 
 // 格式化进度
 const format = (percentage) => `${stats.totalCredits}/${stats.requiredCredits}`

@@ -27,8 +27,8 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/sms?useUnicode=true&characterEncoding=utf8
-    username: user
-    password: 123
+    username: root
+    password: 
   jpa:
     show-sql: true
 # log config
