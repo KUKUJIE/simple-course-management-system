@@ -20,7 +20,6 @@
         <el-table-column label="操作" min-width="180" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-            <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -52,7 +51,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import { adminNewApi } from '@/api/new-api'
 
@@ -96,18 +95,6 @@ const handleEdit = async (row) => {
   formData.departmentId = row.department_id
   formData.status = row.status
   dialogVisible.value = true
-}
-const handleDelete = async (row) => {
-  try {
-    await ElMessageBox.confirm(
-      `确认删除专业「${row.major_name}」？\n\n⚠ 删除后数据不可恢复，关联学生数据也将受影响。`,
-      '⚠ 删除确认',
-      { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'error' }
-    )
-    const res = await adminNewApi.deleteMajor(row.major_id)
-    if (res?.status === 200) { ElMessage.success('已删除'); fetchData() }
-    else ElMessage.warning(res?.msg || '无法删除，请先解除关联')
-  } catch { }
 }
 const handleSubmit = async () => {
   if (!formRef.value) return

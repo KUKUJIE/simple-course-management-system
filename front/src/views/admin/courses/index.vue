@@ -25,7 +25,6 @@
         <el-table-column label="操作" min-width="180" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-            <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -99,18 +98,6 @@ const handleEdit = (row) => {
   formData.status = row.status
   getOriginalStatus.value = row.status
   dialogVisible.value = true
-}
-const handleDelete = async (row) => {
-  try {
-    await ElMessageBox.confirm(
-      `确认删除课程「${row.name}（${row.courseCode}）」？\n\n⚠ 删除后数据不可恢复，关联教学班也将受影响。`,
-      '⚠ 删除确认',
-      { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'error' }
-    )
-    const res = await adminNewApi.deleteCourse(row.id)
-    if (res?.status === 200) { ElMessage.success('已删除'); fetchData() }
-    else ElMessage.warning(res?.msg || '无法删除，请先解除关联')
-  } catch { }
 }
 const handleSubmit = async () => {
   if (!formRef.value) return
