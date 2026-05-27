@@ -8,7 +8,7 @@
 
 ## 项目地址
 
-[GitHub 仓库](https://github.com/jrywzk/course-manage-system.git)
+[GitHub 仓库](https://github.com/jrywzk/simple-course-management-system.git)
 
 ## 功能特点
 
