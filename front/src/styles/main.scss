@@ -1,17 +1,17 @@
-// ===== 暗色主题全局变量（深蓝底 + 高亮字，最大化可读性） =====
+// ===== 暗色主题全局变量（暖灰底 + 柔和白字，护眼且可读） =====
 :root {
-  --primary-bg: #2c2e3a !important;
-  --secondary-bg: #343647 !important;
-  --card-bg: #383a4d !important;
-  --primary-text: #f0f2f8 !important;
-  --secondary-text: #cacee0 !important;
+  --primary-bg: #1e2030 !important;
+  --secondary-bg: #282a3a !important;
+  --card-bg: #2d3042 !important;
+  --primary-text: #d8dae8 !important;
+  --secondary-text: #b0b4c8 !important;
   --accent-color: #409EFF;
   --danger-color: #F56C6C;
   --success-color: #67C23A;
-  --border-color: #444768 !important;
-  --border-light: rgba(255, 255, 255, 0.12);
-  --input-bg: #313346 !important;
-  --hover-bg: rgba(255, 255, 255, 0.08);
+  --border-color: #3a3d52 !important;
+  --border-light: rgba(255, 255, 255, 0.10);
+  --input-bg: #252738 !important;
+  --hover-bg: rgba(255, 255, 255, 0.06);
   --page-title-size: 22px;
   --table-header-size: 15px;
   --table-cell-size: 14px;
@@ -25,39 +25,39 @@
   --el-color-danger: #F56C6C;
   --el-color-info: #909399;
 
-  // 背景色系
-  --el-bg-color: #2c2e3a;
-  --el-bg-color-page: #262834;
-  --el-bg-color-overlay: #383a4d;
+  // 背景色系 — 统一为暖灰暗色
+  --el-bg-color: #1e2030;
+  --el-bg-color-page: #1a1c28;
+  --el-bg-color-overlay: #2d3042;
 
-  // 文字色系 — 全部调亮
-  --el-text-color-primary: #f0f2f8;
-  --el-text-color-regular: #e2e4ee;
-  --el-text-color-secondary: #cacee0;
-  --el-text-color-placeholder: #8a8fa8;
-  --el-text-color-disabled: #5a5e78;
+  // 文字色系 — 柔和白字
+  --el-text-color-primary: #d8dae8;
+  --el-text-color-regular: #c8cbd8;
+  --el-text-color-secondary: #b0b4c8;
+  --el-text-color-placeholder: #767a90;
+  --el-text-color-disabled: #555870;
 
   // 边框色系
-  --el-border-color: #444768;
-  --el-border-color-light: #484b6c;
-  --el-border-color-lighter: #4c4f70;
-  --el-border-color-extra-light: #505476;
-  --el-border-color-dark: #3a3d58;
+  --el-border-color: #3a3d52;
+  --el-border-color-light: #404358;
+  --el-border-color-lighter: #454860;
+  --el-border-color-extra-light: #4a4d65;
+  --el-border-color-dark: #35384a;
 
   // 填充色系
-  --el-fill-color: #343647;
-  --el-fill-color-light: #383a4d;
-  --el-fill-color-lighter: #3c3e52;
-  --el-fill-color-extra-light: #404358;
-  --el-fill-color-dark: #2b2d3d;
-  --el-fill-color-darker: #262836;
+  --el-fill-color: #282a3a;
+  --el-fill-color-light: #2d3042;
+  --el-fill-color-lighter: #323548;
+  --el-fill-color-extra-light: #36394e;
+  --el-fill-color-dark: #222434;
+  --el-fill-color-darker: #1c1e2c;
 
   // 遮罩
   --el-mask-color: rgba(0, 0, 0, 0.6);
   --el-mask-color-extra-light: rgba(0, 0, 0, 0.3);
 
   // 其他
-  --el-color-white: #f0f2f8;
+  --el-color-white: #d8dae8;
   --el-color-black: #000000;
 }
 
@@ -73,6 +73,16 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+// ===== 全局布局重置（替代 main.css 中不生效的 #app 样式） =====
+#app {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  font-weight: normal;
+  width: 100%;
+  min-height: 100vh;
 }
 
 // ===== 页面层级通用 =====
@@ -234,13 +244,32 @@ body {
     }
   }
 
-  // 固定列阴影
+  // 固定列阴影 + 遮罩 — 彻底消除重影
+  .el-table__fixed,
+  .el-table__fixed-right {
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
   .el-table__fixed-right-patch {
-    background-color: var(--secondary-bg);
+    background-color: var(--secondary-bg) !important;
+    border-left: 1px solid var(--border-color) !important;
   }
   .el-table__fixed::before,
   .el-table__fixed-right::before {
-    background-color: transparent;
+    display: none !important;
+  }
+  .el-table__fixed-body-wrapper {
+    background-color: transparent !important;
+  }
+  // 固定列表头背景不透底
+  .el-table__fixed-header-wrapper th.el-table__cell,
+  .el-table__fixed-right .el-table__fixed-header-wrapper th.el-table__cell {
+    background-color: var(--secondary-bg) !important;
+  }
+  // 固定列单元格背景
+  .el-table__fixed-body-wrapper td.el-table__cell,
+  .el-table__fixed-right .el-table__fixed-body-wrapper td.el-table__cell {
+    background-color: var(--card-bg) !important;
   }
 }
 

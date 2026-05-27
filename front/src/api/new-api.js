@@ -132,28 +132,178 @@ export const teacherNewApi = {
 // ======================== 5. 管理员端 ========================
 
 export const adminNewApi = {
-  /**
-   * 获取所有教学班列表（管理员课程管理页主数据源）
-   * GET /api/sections?page=1&pageSize=100&status=
-   */
-  async getAllSections(params = {}) {
-    return http.get('/api/sections', { page: 1, pageSize: 100, status: '', ...params })
+  // ======================== 下拉选项 ========================
+
+  async getCourseOptions() {
+    return http.get('/api/admin/courses/options')
+  },
+  async getTeacherOptions() {
+    return http.get('/api/admin/teachers/options')
+  },
+  async getClassroomOptions() {
+    return http.get('/api/admin/classrooms/options')
   },
 
-  /**
-   * 获取教学班详情（含选课学生列表）
-   * GET /api/sections/{id}
-   */
-  async getSectionDetail(id) {
-    return http.get(`/api/sections/${id}`)
+  // ======================== 课程管理 ========================
+
+  async getCourseList() {
+    return http.get('/api/admin/courses')
+  },
+  async getCourseById(id) {
+    return http.get(`/api/admin/courses/${id}`)
+  },
+  async addCourse(data) {
+    return http.post('/api/admin/courses', data)
+  },
+  async updateCourse(id, data) {
+    return http.put(`/api/admin/courses/${id}`, data)
+  },
+  async disableCourse(id) {
+    return http.put(`/api/admin/courses/${id}/disable`)
+  },
+  async deleteCourse(id) {
+    return http.delete(`/api/admin/courses/${id}`)
   },
 
-  /**
-   * 课程删除
-   * GET /api/course/deleteByCourseId
-   */
-  async deleteCourse(courseId) {
-    return http.get(`/api/course/deleteByCourseId`, { params: { courseId } })
+  // ======================== 教学班管理 ========================
+
+  async getSectionList() {
+    return http.get('/api/admin/sections')
+  },
+  async getSectionById(id) {
+    return http.get(`/api/admin/sections/${id}`)
+  },
+  async addSection(data) {
+    return http.post('/api/admin/sections', data)
+  },
+  async updateSection(id, data) {
+    return http.put(`/api/admin/sections/${id}`, data)
+  },
+  async closeSection(id) {
+    return http.put(`/api/admin/sections/${id}/close`)
+  },
+  async deleteSection(id) {
+    return http.delete(`/api/admin/sections/${id}`)
+  },
+
+  // ======================== 院系管理 ========================
+
+  async getDepartmentList() {
+    return http.get('/api/admin/departments')
+  },
+  async getDepartmentById(id) {
+    return http.get(`/api/admin/departments/${id}`)
+  },
+  async addDepartment(data) {
+    return http.post('/api/admin/departments', data)
+  },
+  async updateDepartment(id, data) {
+    return http.put(`/api/admin/departments/${id}`, data)
+  },
+  async disableDepartment(id) {
+    return http.put(`/api/admin/departments/${id}/disable`)
+  },
+  async deleteDepartment(id) {
+    return http.delete(`/api/admin/departments/${id}`)
+  },
+
+  // ======================== 专业管理 ========================
+
+  async getMajorList() {
+    return http.get('/api/admin/majors')
+  },
+  async getMajorById(id) {
+    return http.get(`/api/admin/majors/${id}`)
+  },
+  async addMajor(data) {
+    return http.post('/api/admin/majors', data)
+  },
+  async updateMajor(id, data) {
+    return http.put(`/api/admin/majors/${id}`, data)
+  },
+  async disableMajor(id) {
+    return http.put(`/api/admin/majors/${id}/disable`)
+  },
+  async deleteMajor(id) {
+    return http.delete(`/api/admin/majors/${id}`)
+  },
+
+  // ======================== 教室管理 ========================
+
+  async getClassroomList() {
+    return http.get('/api/admin/classrooms')
+  },
+  async getClassroomById(id) {
+    return http.get(`/api/admin/classrooms/${id}`)
+  },
+  async addClassroom(data) {
+    return http.post('/api/admin/classrooms', data)
+  },
+  async updateClassroom(id, data) {
+    return http.put(`/api/admin/classrooms/${id}`, data)
+  },
+  async disableClassroom(id) {
+    return http.put(`/api/admin/classrooms/${id}/disable`)
+  },
+  async deleteClassroom(id) {
+    return http.delete(`/api/admin/classrooms/${id}`)
+  },
+
+  // ======================== 学生管理 ========================
+
+  async getStudentList(params = {}) {
+    return http.get('/api/admin/students', params)
+  },
+  async getStudentById(id) {
+    return http.get(`/api/admin/students/${id}`)
+  },
+  async getNextStudentNo(majorId, year) {
+    return http.get('/api/admin/students/next-no', { majorId, year })
+  },
+  async addStudent(data) {
+    return http.post('/api/admin/students', data)
+  },
+  async updateStudent(id, data) {
+    return http.put(`/api/admin/students/${id}`, data)
+  },
+  async disableStudent(id) {
+    return http.put(`/api/admin/students/${id}/disable`)
+  },
+  async deleteStudent(id) {
+    return http.delete(`/api/admin/students/${id}`)
+  },
+
+  // ======================== 教师管理 ========================
+
+  async getTeacherList(params = {}) {
+    return http.get('/api/admin/teachers', params)
+  },
+  async getTeacherById(id) {
+    return http.get(`/api/admin/teachers/${id}`)
+  },
+  async getNextTeacherNo(departmentId, year) {
+    return http.get('/api/admin/teachers/next-no', { departmentId, year })
+  },
+  async addTeacher(data) {
+    return http.post('/api/admin/teachers', data)
+  },
+  async updateTeacher(id, data) {
+    return http.put(`/api/admin/teachers/${id}`, data)
+  },
+  async disableTeacher(id) {
+    return http.put(`/api/admin/teachers/${id}/disable`)
+  },
+  async deleteTeacher(id) {
+    return http.delete(`/api/admin/teachers/${id}`)
+  },
+
+  // ======================== 下拉选项补充 ========================
+
+  async getMajorOptions() {
+    return http.get('/api/admin/majors/options')
+  },
+  async getDepartmentOptions() {
+    return http.get('/api/admin/departments/options')
   }
 }
 

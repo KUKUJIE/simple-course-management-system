@@ -4,49 +4,55 @@
   }
   
   .data-card {
-    height: 180px;
-    position: relative;
-    overflow: hidden;
+    border: none;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+    :deep(.el-card__body) {
+      min-height: 145px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    &.courses { border-top: 3px solid #67C23A; }
+    &.credits { border-top: 3px solid #409EFF; }
+    &.gpa    { border-top: 3px solid #E6A23C; }
     
-    .card-canvas {
-      position: absolute;
-      top: 50%;
-      left: 20px;
-      transform: translateY(-50%);
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
     }
     
     .card-content {
-      position: absolute;
-      right: 20px;
-      top: 50%;
-      transform: translateY(-50%);
-      text-align: right;
+      padding: 0;
+      text-align: center;
+
+      .card-icon { font-size: 28px; margin-bottom: 8px; }
       
       h3 {
         margin: 0;
-        font-size: 15px;
+        font-size: 14px;
         color: var(--el-text-color-secondary);
         font-weight: 500;
-        letter-spacing: 1px;
       }
       
       .number {
-        font-size: 34px;
-        font-weight: bold;
+        font-size: 36px;
+        font-weight: 800;
         margin: 8px 0;
-        color: var(--el-color-primary);
+        color: var(--el-text-color-primary);
       }
       
       .desc {
-        font-size: 14px;
+        font-size: 12px;
         color: var(--el-text-color-secondary);
+        opacity: 0.8;
       }
       
       .el-button {
-        margin-top: 8px;
+        margin-top: 6px;
         padding: 0;
-        font-size: 14px;
-        font-weight: 500;
+        font-size: 13px;
       }
     }
   }

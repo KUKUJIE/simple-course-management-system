@@ -52,6 +52,11 @@ public class EnrollmentController {
             return R.error("教学班不存在", 404);
         }
 
+        // 检查教学班是否已关闭
+        if (section.getStatus() != null && section.getStatus() == 0) {
+            return R.error("该教学班已关闭，无法选课", 400);
+        }
+
         // 检查是否已选（正常状态）
         Enrollment existing = enrollmentMapper.selectByStudentAndSection(studentId, sectionId);
         if (existing != null && existing.getStatus() == 1) {

@@ -8,7 +8,7 @@
         </div>
       </template>
 
-      <el-table :data="sectionList" style="width: 100%" v-loading="loadingSections">
+      <el-table :data="pagedSectionList" style="width: 100%" v-loading="loadingSections">
         <el-table-column prop="sectionCode" label="教学班编号" min-width="140" />
         <el-table-column prop="courseName" label="课程名称" min-width="180" />
         <el-table-column prop="semester" label="学期" width="120" />
@@ -27,6 +27,17 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="pagination-section">
+        <el-pagination
+          v-model:current-page="sectionCurrentPage"
+          v-model:page-size="sectionPageSize"
+          :page-sizes="[10, 20, 30, 50]"
+          :total="sectionList.length"
+          layout="total, sizes, prev, pager, next"
+          background
+        />
+      </div>
     </el-card>
 
     <!-- 成绩管理 -->
@@ -51,7 +62,7 @@
           </div>
         </template>
 
-        <el-table :data="studentList" style="width: 100%">
+        <el-table :data="pagedStudentList" style="width: 100%">
           <el-table-column prop="studentNo" label="学号" min-width="120" />
           <el-table-column prop="studentName" label="姓名" min-width="100" />
           <el-table-column prop="majorName" label="专业" min-width="140" />
@@ -112,6 +123,18 @@
           </el-table-column>
         </el-table>
 
+        <!-- 分页 -->
+        <div class="pagination-section">
+          <el-pagination
+            v-model:current-page="gradesCurrentPage"
+            v-model:page-size="gradesPageSize"
+            :page-sizes="[10, 20, 30, 50]"
+            :total="studentList.length"
+            layout="total, sizes, prev, pager, next"
+            background
+          />
+        </div>
+
         <!-- 成绩统计 -->
         <div class="statistics">
           <div class="stat-item"><span class="stat-label">平均分</span><span class="stat-value">{{ stats.average.toFixed(1) }}</span></div>
@@ -135,6 +158,22 @@ const loadingSections = ref(false)
 const selectedSection = ref(null)
 const sectionList = ref([])
 const studentList = ref([])
+const sectionCurrentPage = ref(1)
+const sectionPageSize = ref(10)
+const gradesCurrentPage = ref(1)
+const gradesPageSize = ref(10)
+
+// 分页显示的教学班列表
+const pagedSectionList = computed(() => {
+  const start = (sectionCurrentPage.value - 1) * sectionPageSize.value
+  return sectionList.value.slice(start, start + sectionPageSize.value)
+})
+
+// 分页显示的学生列表
+const pagedStudentList = computed(() => {
+  const start = (gradesCurrentPage.value - 1) * gradesPageSize.value
+  return studentList.value.slice(start, start + gradesPageSize.value)
+})
 
 // 安全获取 teacherId
 const getTeacherId = () => {

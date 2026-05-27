@@ -3,6 +3,7 @@ package com.agiantii.backend.mapper;
 import com.agiantii.backend.pojo.User;
 import com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration;
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mybatis.spring.annotation.MapperScan;
@@ -29,13 +30,26 @@ import java.util.Map;
 class UserMapperTest {
     @Resource
     private UserMapper userMapper;
+
+    private static final int TEST_USER_ID = 99999;
+
+    @AfterEach
+    void cleanup() {
+        userMapper.deleteUserNyId(TEST_USER_ID);
+    }
+
     @Test
     void insertUser() {
         User user = new User();
-        user.setId(1);
+        user.setId(TEST_USER_ID);
+        user.setUsername("test_admin");
         user.setPassword("1234");
         user.setRole("admin");
         userMapper.insertUser(user);
+        User saved = userMapper.selectUserById(TEST_USER_ID);
+        Assertions.assertNotNull(saved);
+        Assertions.assertEquals("test_admin", saved.getUsername());
+        Assertions.assertEquals("admin", saved.getRole());
     }
 
     @Test

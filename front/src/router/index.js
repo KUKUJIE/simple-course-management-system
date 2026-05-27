@@ -144,6 +144,46 @@ const router = createRouter({
             requiresAuth: true,
             role: 'admin'
           }
+        },
+        {
+          path: 'sections',
+          name: 'SectionManagement',
+          component: () => import('@/views/admin/sections/index.vue'),
+          meta: {
+            title: '教学班管理',
+            requiresAuth: true,
+            role: 'admin'
+          }
+        },
+        {
+          path: 'departments',
+          name: 'DepartmentManagement',
+          component: () => import('@/views/admin/departments/index.vue'),
+          meta: {
+            title: '院系管理',
+            requiresAuth: true,
+            role: 'admin'
+          }
+        },
+        {
+          path: 'majors',
+          name: 'MajorManagement',
+          component: () => import('@/views/admin/majors/index.vue'),
+          meta: {
+            title: '专业管理',
+            requiresAuth: true,
+            role: 'admin'
+          }
+        },
+        {
+          path: 'classrooms',
+          name: 'ClassroomManagement',
+          component: () => import('@/views/admin/classrooms/index.vue'),
+          meta: {
+            title: '教室管理',
+            requiresAuth: true,
+            role: 'admin'
+          }
         }
       ]
     },

@@ -28,6 +28,22 @@
           <el-icon><Collection /></el-icon>
           <span>课程管理</span>
         </el-menu-item>
+        <el-menu-item index="/admin/sections">
+          <el-icon><Tickets /></el-icon>
+          <span>教学班管理</span>
+        </el-menu-item>
+        <el-menu-item index="/admin/departments">
+          <el-icon><OfficeBuilding /></el-icon>
+          <span>院系管理</span>
+        </el-menu-item>
+        <el-menu-item index="/admin/majors">
+          <el-icon><Notebook /></el-icon>
+          <span>专业管理</span>
+        </el-menu-item>
+        <el-menu-item index="/admin/classrooms">
+          <el-icon><School /></el-icon>
+          <span>教室管理</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     
@@ -47,7 +63,11 @@
       </el-header>
       
       <el-main>
-        <router-view />
+        <router-view v-slot="{ Component }">
+          <keep-alive>
+            <component :is="Component" />
+          </keep-alive>
+        </router-view>
       </el-main>
     </el-container>
   </el-container>
@@ -56,7 +76,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { HomeFilled, User, UserFilled, Collection } from '@element-plus/icons-vue'
+import { HomeFilled, User, UserFilled, Collection, Tickets, OfficeBuilding, Notebook, School } from '@element-plus/icons-vue'
 import AppLogo from '@/components/AppLogo.vue'
 
 const route = useRoute()

@@ -19,7 +19,7 @@
 
     <!-- 课程列表 -->
     <el-card class="course-list" v-loading="loading">
-      <el-table :data="courseList" style="width: 100%">
+      <el-table :data="pagedData" style="width: 100%">
         <el-table-column prop="id" label="课程代码" min-width="100" />
         <el-table-column prop="name" label="课程名称" min-width="140" />
         <el-table-column prop="sectionCode" label="教学班" min-width="160" />
@@ -52,6 +52,17 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="pagination-section">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 30, 50]"
+          :total="courseList.length"
+          layout="total, sizes, prev, pager, next"
+          background
+        />
+      </div>
     </el-card>
 
 
@@ -59,7 +70,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
@@ -69,9 +80,27 @@ import './style.scss'
 const router = useRouter()
 const loading = ref(false)
 const searchKey = ref('')
+const currentPage = ref(1)
+const pageSize = ref(10)
 
-// 课程列表
+// 课程列表（原始数据）
 const courseList = ref([])
+
+// 搜索过滤后的数据
+const filteredData = computed(() => {
+  if (!searchKey.value) return courseList.value
+  const keyword = searchKey.value.toLowerCase()
+  return courseList.value.filter(s =>
+    (s.name && s.name.toLowerCase().includes(keyword)) ||
+    (s.sectionCode && s.sectionCode.toLowerCase().includes(keyword))
+  )
+})
+
+// 分页数据
+const pagedData = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredData.value.slice(start, start + pageSize.value)
+})
 
 // 获取容量百分比
 const getCapacityPercentage = (selected = 0, limit = 1) => {
@@ -126,16 +155,7 @@ const fetchCourses = async () => {
 
 // 处理搜索
 const handleSearch = () => {
-  // 前端过滤（新版 API 暂不支持搜索参数）
-  if (searchKey.value) {
-    const keyword = searchKey.value.toLowerCase()
-    courseList.value = courseList.value.filter(s =>
-      (s.name && s.name.toLowerCase().includes(keyword)) ||
-      (s.sectionCode && s.sectionCode.toLowerCase().includes(keyword))
-    )
-  } else {
-    fetchCourses()
-  }
+  currentPage.value = 1
 }
 
 // 处理成绩管理（跳转到成绩管理页，传入 sectionId）

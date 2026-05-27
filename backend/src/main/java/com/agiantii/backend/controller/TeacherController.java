@@ -34,6 +34,7 @@ public class TeacherController {
         user.setRole(Constant.ROLE_TEACHER);
         user.setPassword(password);
         user.setId(teacher.getTeacherId());
+        user.setUsername("teacher_" + teacher.getTeacherId());
 
         try{
             teacherMapper.insert(teacher);

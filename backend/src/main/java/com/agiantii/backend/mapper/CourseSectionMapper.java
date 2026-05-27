@@ -1,11 +1,10 @@
 package com.agiantii.backend.mapper;
 
 import com.agiantii.backend.pojo.vo.CourseSectionVo;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface CourseSectionMapper {
@@ -56,4 +55,72 @@ public interface CourseSectionMapper {
 
     @Select("SELECT teacher_id FROM t_course_section WHERE section_id = #{sectionId}")
     Integer selectTeacherIdBySectionId(@Param("sectionId") Integer sectionId);
+
+    // ======== 管理员端教学班管理方法 ========
+
+    @Select("<script>" +
+            "SELECT cs.section_id AS sectionId, cs.section_code AS sectionCode, cs.semester, " +
+            "cs.course_id AS courseId, c.course_name AS courseName, " +
+            "cs.teacher_id AS teacherId, t.teacher_name AS teacherName, " +
+            "cs.classroom_id AS classroomId, CONCAT(cr.building, ' ', cr.room_no) AS classroomName, " +
+            "cs.capacity_limit AS capacityLimit, cs.selected_count AS selectedCount, " +
+            "cs.schedule_text AS scheduleText, cs.status " +
+            "FROM t_course_section cs " +
+            "JOIN t_course c ON cs.course_id = c.course_id " +
+            "JOIN t_teacher t ON cs.teacher_id = t.teacher_id " +
+            "LEFT JOIN t_classroom cr ON cs.classroom_id = cr.classroom_id " +
+            "WHERE 1=1 " +
+            "<if test='courseId != null'> AND cs.course_id = #{courseId}</if>" +
+            "<if test='teacherId != null'> AND cs.teacher_id = #{teacherId}</if>" +
+            "<if test='status != null'> AND cs.status = #{status}</if>" +
+            "ORDER BY cs.semester DESC, cs.section_id" +
+            "</script>")
+    List<Map<String, Object>> selectAllForAdmin(
+            @Param("courseId") Integer courseId,
+            @Param("teacherId") Integer teacherId,
+            @Param("status") Integer status);
+
+    @Select("SELECT cs.section_id AS sectionId, cs.section_code AS sectionCode, cs.semester, " +
+            "cs.course_id AS courseId, c.course_name AS courseName, " +
+            "cs.teacher_id AS teacherId, t.teacher_name AS teacherName, " +
+            "cs.classroom_id AS classroomId, CONCAT(cr.building, ' ', cr.room_no) AS classroomName, " +
+            "cs.capacity_limit AS capacityLimit, cs.selected_count AS selectedCount, " +
+            "cs.schedule_text AS scheduleText, cs.status " +
+            "FROM t_course_section cs " +
+            "JOIN t_course c ON cs.course_id = c.course_id " +
+            "JOIN t_teacher t ON cs.teacher_id = t.teacher_id " +
+            "LEFT JOIN t_classroom cr ON cs.classroom_id = cr.classroom_id " +
+            "WHERE cs.section_id = #{sectionId}")
+    Map<String, Object> selectByIdForAdmin(@Param("sectionId") Integer sectionId);
+
+    @Insert("INSERT INTO t_course_section(section_code, course_id, teacher_id, classroom_id, " +
+            "semester, capacity_limit, schedule_text, status) " +
+            "VALUES(#{sectionCode}, #{courseId}, #{teacherId}, #{classroomId}, " +
+            "#{semester}, #{capacityLimit}, #{scheduleText}, #{status})")
+    @Options(useGeneratedKeys = true, keyProperty = "sectionId")
+    void insertSection(Map<String, Object> section);
+
+    @Update("UPDATE t_course_section SET section_code = #{sectionCode}, course_id = #{courseId}, " +
+            "teacher_id = #{teacherId}, classroom_id = #{classroomId}, semester = #{semester}, " +
+            "capacity_limit = #{capacityLimit}, schedule_text = #{scheduleText}, status = #{status} " +
+            "WHERE section_id = #{sectionId}")
+    void updateSection(Map<String, Object> section);
+
+    @Update("UPDATE t_course_section SET status = 0 WHERE section_id = #{sectionId}")
+    void closeSection(@Param("sectionId") Integer sectionId);
+
+    @Delete("DELETE FROM t_course_section WHERE section_id = #{sectionId}")
+    void deleteSectionById(@Param("sectionId") Integer sectionId);
+
+    @Select("SELECT COUNT(*) FROM t_enrollment WHERE section_id = #{sectionId}")
+    int countEnrollments(@Param("sectionId") Integer sectionId);
+
+    @Select("SELECT selected_count FROM t_course_section WHERE section_id = #{sectionId}")
+    Integer selectSelectedCount(@Param("sectionId") Integer sectionId);
+
+    @Select("SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(section_code, '-', -1) AS UNSIGNED)), 0) " +
+            "FROM t_course_section WHERE course_id = #{courseId} " +
+            "AND section_code LIKE CONCAT(#{courseCode}, '-%')")
+    Integer selectMaxSectionSeqByCourseId(@Param("courseId") Integer courseId,
+                                          @Param("courseCode") String courseCode);
 }

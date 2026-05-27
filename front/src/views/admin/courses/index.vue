@@ -1,113 +1,71 @@
 <template>
   <div class="courses-container">
-    <!-- 操作栏 -->
+    <div class="page-header"><h2>课程目录管理</h2></div>
+
     <div class="action-bar">
-      <el-button type="primary" @click="handleAdd">
-        <el-icon><Plus /></el-icon>
-        添加课程
-      </el-button>
+      <el-input v-model="searchKeyword" placeholder="搜索课程名/编码" style="width: 240px" clearable>
+        <template #prefix><el-icon><Search /></el-icon></template>
+      </el-input>
+      <el-button type="primary" @click="handleAdd"><el-icon><Plus /></el-icon>新增课程</el-button>
     </div>
 
-    <!-- 课程列表 -->
-    <el-card class="course-list" v-loading="loading">
-      <el-table :data="courseList" style="width: 100%" :header-cell-style="{ textAlign: 'center' }">
-        <el-table-column prop="id" label="课程代码" min-width="120" />
-        <el-table-column prop="name" label="课程名称" min-width="160" />
+    <el-card class="data-card" v-loading="loading">
+      <el-table :data="pagedData" style="width: 100%" empty-text="暂无课程数据">
+        <el-table-column prop="courseCode" label="课程编码" min-width="130" />
+        <el-table-column prop="name" label="课程名称" min-width="180" />
         <el-table-column prop="credit" label="学分" min-width="80" align="center" />
-        <el-table-column prop="term" label="开课日期" min-width="140" />
-        <el-table-column prop="teacherName" label="授课教师" min-width="120" />
-        <el-table-column prop="studentLimit" label="选课人数" min-width="120" align="center">
+        <el-table-column prop="departmentName" label="所属院系" min-width="140" />
+        <el-table-column label="状态" min-width="90" align="center">
           <template #default="{ row }">
-            <el-tag :type="getCapacityTagType(row.selectedCount, row.studentLimit)">
-              {{ row.selectedCount }}/{{ row.studentLimit }}
+            <el-tag :type="row.status === 1 ? 'success' : 'info'">
+              {{ row.status === 1 ? '启用' : '停用' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right" align="center">
+        <el-table-column label="操作" min-width="180" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button 
-              type="success" 
-              link
-              @click="handleEdit(row)"
-            >
-              编辑
-            </el-button>
-            <!-- TODO: 依赖旧 deleteByCourseId 接口，新版接口确认后再启用
-            <el-button 
-              type="danger" 
-              link
-              @click="handleDelete(row)"
-            >
-              删除
-            </el-button>
-            -->
+            <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="pagination">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 30, 50]"
+          :total="filteredData.length"
+          layout="total, sizes, prev, pager, next"
+          background
+        />
+      </div>
     </el-card>
 
-    <!-- 添加/编辑对话框 -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="dialogType === 'add' ? '添加课程' : '编辑课程'"
-      width="500px"
-    >
-      <el-form
-        ref="formRef"
-        :model="courseForm"
-        :rules="rules"
-        label-width="100px"
-      >
+    <el-dialog v-model="dialogVisible" :title="dialogType==='add'?'新增课程':'编辑课程'" width="520px" @close="resetForm">
+      <el-form ref="formRef" :model="formData" :rules="rules" label-width="80px">
+        <el-form-item label="课程编码" prop="courseCode">
+          <el-input v-model="formData.courseCode" :disabled="dialogType==='edit'" placeholder="如 CS101" />
+        </el-form-item>
         <el-form-item label="课程名称" prop="name">
-          <el-input v-model="courseForm.name" />
+          <el-input v-model="formData.name" placeholder="如 高等数学" />
         </el-form-item>
-        
         <el-form-item label="学分" prop="credit">
-          <el-input-number 
-            v-model="courseForm.credit" 
-            :min="1" 
-            :max="10"
-            :precision="1"
-            :step="0.5"
-          />
+          <el-input-number v-model="formData.credit" :min="0.5" :max="20" :step="0.5" style="width: 100%" />
         </el-form-item>
-        
-        <el-form-item label="课程容量" prop="studentLimit">
-          <el-input-number 
-            v-model="courseForm.studentLimit" 
-            :min="1" 
-            :max="200"
-            :step="5"
-          />
+        <el-form-item label="所属院系" prop="departmentId">
+          <el-select v-model="formData.departmentId" style="width: 100%" placeholder="请选择院系">
+            <el-option v-for="d in deptOptions" :key="d.departmentId" :label="d.departmentName" :value="d.departmentId" />
+          </el-select>
         </el-form-item>
-        
-        <el-form-item label="开课日期" prop="term">
-          <el-date-picker
-            v-model="courseForm.term"
-            type="date"
-            placeholder="选择开课日期"
-            format="YYYY-MM-DD"
-            value-format="YYYY-MM-DD"
-            class="w-full"
-          />
-        </el-form-item>
-        
-        <el-form-item label="授课教师" prop="teacherId">
-          <el-select v-model="courseForm.teacherId" class="w-full">
-            <el-option 
-              v-for="teacher in teacherList"
-              :key="teacher.id"
-              :label="teacher.name"
-              :value="teacher.id"
-            />
+        <el-form-item label="状态" prop="status">
+          <el-select v-model="formData.status" style="width: 100%">
+            <el-option label="启用" :value="1" /><el-option label="停用" :value="0" />
           </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
-        <span class="dialog-footer">
-          <el-button plain @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" plain @click="handleSubmit">确定</el-button>
-        </span>
+        <el-button plain @click="dialogVisible=false">取消</el-button>
+        <el-button type="primary" @click="handleSubmit" :loading="submitting">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -116,147 +74,96 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Search } from '@element-plus/icons-vue'
 import { adminNewApi } from '@/api/new-api'
-import './style.scss'
 
-const loading = ref(false)
-const dialogVisible = ref(false)
-const dialogType = ref('add')
-const formRef = ref(null)
-
-// 课程列表（从 /api/sections 获取）
-const courseList = ref([])
-// 教师列表（从 section 数据中提取）
-const teacherList = computed(() => {
-  const map = {}
-  courseList.value.forEach(s => {
-    if (s.teacherId && s.teacherName) {
-      map[s.teacherId] = { id: s.teacherId, name: s.teacherName }
-    }
-  })
-  return Object.values(map)
-})
-
-// 课程表单
-const courseForm = reactive({
-  name: '',
-  credit: 2,
-  studentLimit: 50,
-  term: '',
-  teacherId: ''
-})
-
-// 表单验证规则
+const loading = ref(false), submitting = ref(false), dialogVisible = ref(false), dialogType = ref('add')
+const formRef = ref(null), searchKeyword = ref(''), tableData = ref([]), deptOptions = ref([])
+const getOriginalStatus = ref(null)
+const formData = reactive({ id: null, courseCode: '', name: '', credit: 2, departmentId: null, status: 1 })
 const rules = {
+  courseCode: [{ required: true, message: '请输入课程编码', trigger: 'blur' }],
   name: [{ required: true, message: '请输入课程名称', trigger: 'blur' }],
   credit: [{ required: true, message: '请选择学分', trigger: 'change' }],
-  studentLimit: [{ required: true, message: '请设置课程容量', trigger: 'change' }],
-  term: [{ required: true, message: '请选择开课日期', trigger: 'change' }],
-  teacherId: [{ required: true, message: '请选择授课教师', trigger: 'change' }]
+  departmentId: [{ required: true, message: '请选择所属院系', trigger: 'change' }]
 }
 
-// 获取课程列表（使用 /api/sections）
-const fetchCourses = async () => {
+const currentPage = ref(1)
+const pageSize = ref(10)
+
+const filteredData = computed(() => {
+  if (!searchKeyword.value) return tableData.value
+  const kw = searchKeyword.value.toLowerCase()
+  return tableData.value.filter(r => (r.name||'').toLowerCase().includes(kw) || (r.courseCode||'').toLowerCase().includes(kw))
+})
+
+const pagedData = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredData.value.slice(start, start + pageSize.value)
+})
+
+const fetchData = async () => {
+  loading.value = true
+  currentPage.value = 1
   try {
-    loading.value = true
-    const res = await adminNewApi.getAllSections()
-    if (res && (res.status === 200 || res.code === 200)) {
-      const list = res.data?.list || res.data || []
-      courseList.value = list.map(s => ({
-        id: s.sectionId,
-        name: s.courseName,
-        credit: s.credit,
-        term: s.semester,
-        teacherId: s.teacherId || 0,
-        teacherName: s.teacherName || '未分配',
-        studentLimit: s.capacityLimit,
-        selectedCount: s.selectedCount || 0,
-        sectionCode: s.sectionCode,
-        building: s.building,
-        roomNo: s.roomNo
-      }))
-    } else {
-      ElMessage.warning('获取课程列表失败')
-    }
-  } catch (error) {
-    console.error('获取课程列表失败:', error)
-    ElMessage.error('获取课程列表失败')
-  } finally {
-    loading.value = false
-  }
+    const res = await adminNewApi.getCourseList()
+    if (res?.status === 200) tableData.value = res.data || []
+    else ElMessage.error(res?.msg || '获取课程列表失败')
+  } catch (e) { ElMessage.error('获取课程列表失败') }
+  finally { loading.value = false }
 }
 
-// 处理添加课程（当前后端无新增教学班接口，提示用户）
-const handleAdd = () => {
-  ElMessage.info('课程添加功能暂不可用，请通过后端管理教学班数据')
+const loadDepts = async () => {
+  try {
+    const res = await adminNewApi.getDepartmentOptions()
+    if (res?.status === 200) deptOptions.value = res.data || []
+  } catch { /* ignore */ }
 }
 
-// 处理编辑课程
-const handleEdit = (course) => {
+const resetForm = () => { formRef.value?.resetFields(); Object.assign(formData, { id: null, courseCode: '', name: '', credit: 2, departmentId: null, status: 1 }); getOriginalStatus.value = null }
+const handleAdd = () => { dialogType.value = 'add'; resetForm(); dialogVisible.value = true }
+const handleEdit = (row) => {
   dialogType.value = 'edit'
-  Object.assign(courseForm, {
-    name: course.name,
-    credit: course.credit,
-    studentLimit: course.studentLimit,
-    term: course.term || '',
-    teacherId: course.teacherId
-  })
+  formData.id = row.id
+  formData.courseCode = row.courseCode || ''
+  formData.name = row.name || ''
+  formData.credit = row.credit || 2
+  formData.departmentId = row.departmentId || null
+  formData.status = row.status
+  getOriginalStatus.value = row.status
   dialogVisible.value = true
 }
-
-// 处理删除课程
-const handleDelete = async (course) => {
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除课程"${course.name}"(${course.sectionCode})吗？`,
-      '删除确认',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
-    
-    const res = await adminNewApi.deleteCourse(course.id, course.teacherId)
-    if (res && (res.status === 200 || res.code === 200)) {
-      ElMessage.success('删除成功')
-      fetchCourses()
-    } else {
-      ElMessage.warning(res?.msg || '删除失败')
-    }
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('删除课程失败:', error)
-      ElMessage.error('删除课程失败')
-    }
-  }
-}
-
-// 处理表单提交
 const handleSubmit = async () => {
   if (!formRef.value) return
-  
-  try {
-    await formRef.value.validate()
-    ElMessage.warning('课程编辑功能暂不可用，请通过后端直接管理数据')
-    dialogVisible.value = false
-  } catch (error) {
-    console.error('保存课程失败:', error)
+  try { await formRef.value.validate() } catch { return }
+  if (dialogType.value === 'edit' && getOriginalStatus.value !== formData.status) {
+    const newStatusText = formData.status === 1 ? '启用' : '停用'
+    try {
+      await ElMessageBox.confirm(`确认将该课程状态改为"${newStatusText}"？`, '状态变更确认', {
+        confirmButtonText: '确认变更', cancelButtonText: '取消', type: 'warning'
+      })
+    } catch { return }
   }
+  submitting.value = true
+  try {
+    const payload = { courseCode: formData.courseCode, name: formData.name, credit: formData.credit, departmentId: formData.departmentId, status: formData.status }
+    let res
+    if (dialogType.value === 'add') res = await adminNewApi.addCourse(payload)
+    else res = await adminNewApi.updateCourse(formData.id, payload)
+    if (res?.status === 200) { ElMessage.success(res.msg || '保存成功'); dialogVisible.value = false; fetchData() }
+    else ElMessage.error(res?.msg || '保存失败')
+  } catch (e) { ElMessage.error('保存失败') }
+  finally { submitting.value = false }
 }
 
-// 获取容量标签类型
-const getCapacityTagType = (selected, limit) => {
-  if (!limit || limit === 0) return 'info'
-  const percentage = selected / limit
-  if (percentage >= 0.9) return 'danger'
-  if (percentage >= 0.7) return 'warning'
-  return 'success'
-}
+onMounted(() => { fetchData(); loadDepts() })
+</script>
 
-// 初始化
-onMounted(async () => {
-  await fetchCourses()
-})
-</script> 
+<style lang="scss" scoped>
+@use './style.scss';
+.courses-container { padding: 24px; }
+.page-header { margin-bottom: 20px; h2 { margin: 0; font-size: 20px; font-weight: 600; color: var(--el-text-color-primary); } }
+.action-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+.data-card { border: 1px solid var(--el-border-color-darker); }
+:deep(.el-select) { --el-fill-color-blank: var(--input-bg, #313346); }
+</style>
