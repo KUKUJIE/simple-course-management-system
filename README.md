@@ -4,7 +4,7 @@
 
 本项目是一个面向高校课程管理场景的学生选课管理系统，前端基于 Vue 3 + Vite + Element Plus，后端基于 Spring Boot 2.6.13 + MyBatis-Plus + MySQL。
 
-系统支持学生、教师、管理员三类角色，围绕新版核心业务链 `course -> course_section -> enrollment -> score` 完成课程目录、教学班、选课记录和成绩记录的分离管理。最终版本重点补齐了数据库实体关系、外键约束、索引、视图、存储过程、触发器和大数据测试数据，满足数据库课程项目的设计与实现要求。
+系统支持学生、教师、管理员三类角色，围绕核心业务链 `course -> course_section -> enrollment -> score` 完成课程目录、教学班、选课记录和成绩记录的分离管理。项目重点补齐了数据库实体关系、外键约束、索引、视图、存储过程、触发器和大数据测试数据，满足数据库课程项目的设计与实现要求。
 
 ## 项目地址
 
@@ -463,6 +463,27 @@ npm install
 npm run dev
 ```
 
+#### 2.3 快速启动
+
+完成一次环境构建后，后续可直接使用项目根目录下的启动脚本快速启动前后端服务：
+
+```bash
+start-dev.bat
+```
+
+或在 PowerShell 中执行：
+
+```powershell
+.\start-dev.ps1
+```
+
+使用快速启动脚本前，应先确保已经完成以下准备：
+
+- MySQL 已启动，且已导入 `sql/sms.sql`。
+- `backend/src/main/resources/application.yml` 中的数据库连接信息正确。
+- 前端依赖已在 `front/` 目录下通过 `npm install` 安装完成。
+- 本机已安装可用的 Maven、Node.js 和 npm。
+
 ### 3. 访问项目
 
 - 前端页面：`http://localhost:5173`
@@ -471,13 +492,11 @@ npm run dev
 
 ### 4. 登录入口
 
-最终版前端登录主要调用：
+前端登录调用：
 
 ```text
 POST /api/auth/login
 ```
-
-系统中仍保留部分旧接口兼容代码，正式演示和文档说明以新版登录入口和新版主链接口为准。
 
 ## 项目结构
 
