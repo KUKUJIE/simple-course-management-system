@@ -50,6 +50,24 @@ const router = createRouter({
           name: 'Profile',
           component: () => import('@/views/student/profile/index.vue'),
           meta: { title: '个人信息' }
+        },
+        {
+          path: 'homeworks',
+          name: 'StudentHomeworks',
+          component: () => import('@/views/student/homework/HomeworkList.vue'),
+          meta: { title: '作业' }
+        },
+        {
+          path: 'homeworks/:id/submit',
+          name: 'StudentHomeworkSubmit',
+          component: () => import('@/views/student/homework/HomeworkSubmit.vue'),
+          meta: { title: '提交作业' }
+        },
+        {
+          path: 'homeworks/:id/result',
+          name: 'StudentHomeworkResult',
+          component: () => import('@/views/student/homework/HomeworkResult.vue'),
+          meta: { title: '查看批改' }
         }
       ]
     },
@@ -97,6 +115,18 @@ const router = createRouter({
             requiresAuth: true,
             role: 'teacher'
           }
+        },
+        {
+          path: 'homeworks/:id/submissions',
+          name: 'TeacherHomeworkSubmissions',
+          component: () => import('@/views/teacher/homework/SubmissionList.vue'),
+          meta: { title: '作业提交列表' }
+        },
+        {
+          path: 'homeworks/:homeworkId/submissions/:submissionId',
+          name: 'TeacherHomeworkSubmissionGrade',
+          component: () => import('@/views/teacher/homework/SubmissionGrade.vue'),
+          meta: { title: '批阅提交' }
         }
       ]
     },
