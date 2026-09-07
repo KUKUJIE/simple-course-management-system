@@ -46,7 +46,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from '@/api/axios'
 import * as echarts from 'echarts'
@@ -72,38 +72,60 @@ function renderCharts() {
   const maxScores = perKnowledge.value.map(k => Number(k.maxScore))
 
   // Knowledge point mastery bar chart
-  if (!kpChart) kpChart = echarts.init(chartKP.value)
-  const kpOption = {
-    title: { text: '知识点掌握率 (%)', left: 'center' },
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    xAxis: { type: 'category', data: names },
-    yAxis: { type: 'value', min: 0, max: 100 },
-    series: [
-      {
-        name: '掌握率',
-        type: 'bar',
-        data: percents,
-        itemStyle: { color: '#4caf50' }
-      }
-    ]
+  try {
+    if (!kpChart) kpChart = echarts.init(chartKP.value)
+    const kpOption = {
+      title: { text: '知识点掌握率 (%)', left: 'center' },
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      xAxis: { type: 'category', data: names },
+      yAxis: { type: 'value', min: 0, max: 100 },
+      series: [
+        {
+          name: '掌握率',
+          type: 'bar',
+          data: percents,
+          itemStyle: { color: '#4caf50' },
+          label: { show: true, position: 'top', formatter: '{c}%'}
+        }
+      ]
+    }
+    kpChart.setOption(kpOption)
+    kpChart.resize()
+  } catch (err) {
+    console.error('kpChart render error', err)
   }
-  kpChart.setOption(kpOption)
 
-  // Knowledge point student vs max radar/bar
-  if (!compareChart) compareChart = echarts.init(chartCompare.value)
-  const compareOption = {
-    title: { text: '知识点得分对比', left: 'center' },
-    tooltip: { },
-    legend: { data: ['得分', '满分'], bottom: 0 },
-    xAxis: { type: 'category', data: names },
-    yAxis: { type: 'value' },
-    series: [
-      { name: '得分', type: 'bar', data: studentScores, itemStyle: { color: '#2196f3' } },
-      { name: '满分', type: 'bar', data: maxScores, itemStyle: { color: '#9e9e9e' } }
-    ]
+  // Knowledge point student vs max bar chart
+  try {
+    if (!compareChart) compareChart = echarts.init(chartCompare.value)
+    const compareOption = {
+      title: { text: '知识点得分对比', left: 'center' },
+      tooltip: { },
+      legend: { data: ['得分', '满分'], bottom: 0 },
+      xAxis: { type: 'category', data: names },
+      yAxis: { type: 'value' },
+      series: [
+        { name: '得分', type: 'bar', data: studentScores, itemStyle: { color: '#2196f3' }, label: { show: true, position: 'top' } },
+        { name: '满分', type: 'bar', data: maxScores, itemStyle: { color: '#9e9e9e' } }
+      ]
+    }
+    compareChart.setOption(compareOption)
+    compareChart.resize()
+  } catch (err) {
+    console.error('compareChart render error', err)
   }
-  compareChart.setOption(compareOption)
 }
+
+function safeResize() {
+  try {
+    if (kpChart) kpChart.resize()
+  } catch (e) { /* ignore */ }
+  try {
+    if (compareChart) compareChart.resize()
+  } catch (e) { /* ignore */ }
+}
+
+let resizeHandler = null
 
 onMounted(async () => {
   try {
@@ -118,9 +140,21 @@ onMounted(async () => {
       // small timeout to ensure DOM is ready
       setTimeout(renderCharts, 50)
     }
+
+    // add resize listener
+    resizeHandler = () => safeResize()
+    window.addEventListener('resize', resizeHandler)
   } catch (e) {
     console.error(e)
   }
+})
+
+onUnmounted(() => {
+  // remove resize listener
+  if (resizeHandler) window.removeEventListener('resize', resizeHandler)
+  // dispose charts
+  try { if (kpChart) { kpChart.dispose(); kpChart = null } } catch (e) {}
+  try { if (compareChart) { compareChart.dispose(); compareChart = null } } catch (e) {}
 })
 
 // re-render when perKnowledge changes (in case of async updates)
