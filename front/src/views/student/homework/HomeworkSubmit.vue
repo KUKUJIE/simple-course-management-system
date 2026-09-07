@@ -30,6 +30,7 @@
 import { ref } from 'vue'
 import { submitHomework } from '@/api/homework'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 
 const route = useRoute()
 const router = useRouter()
@@ -51,16 +52,16 @@ function handleChange(file) {
 
 async function submit() {
   const fd = new FormData()
-  fd.append('studentId', localStorage.getItem('uid') || '2')
   fd.append('submitText', form.value.submitText)
   if (currentFile) fd.append('file', currentFile)
   try {
     await submitHomework(homeworkId, fd)
-    this.$message.success('提交成功')
+    ElMessage.success('提交成功')
     router.push('/student/homeworks')
   } catch (e) {
     console.error(e)
-    this.$message.error('提交失败')
+    const msg = e.response && e.response.data && e.response.data.msg ? e.response.data.msg : '提交失败'
+    ElMessage.error(msg)
   }
 }
 </script>
