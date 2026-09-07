@@ -1,19 +1,11 @@
 @@
        {
-         path: 'submissions',
-         name: 'StudentSubmissions',
-         component: () => import('@/views/student/homework/HomeworkList.vue'),
-         meta: { title: '作业列表' }
-       },
-+      {
-+        path: 'homeworks/:homeworkId/submissions/:submissionId/result',
-+        name: 'StudentSubmissionResult',
-+        component: () => import('@/views/student/homework/SubmissionResult.vue'),
-+        meta: { title: '批改结果' }
-+      },
-       {
-         path: 'course-selection',
-         name: 'CourseSelection',
-         component: () => import('@/views/student/course-selection/index.vue'),
-         meta: { title: '选课中心' }
+         path: '/admin',
+         name: 'Admin',
+         component: () => import('@/views/admin/index.vue'),
+         children: [
++          { path: 'users', name: 'AdminUsers', component: () => import('@/views/admin/UserManagement.vue'), meta: { title: '用户管理' } },
++          { path: 'courses', name: 'AdminCourses', component: () => import('@/views/admin/CourseManagement.vue'), meta: { title: '课程管理' } },
+           { path: 'settings', name: 'AdminSettings', component: () => import('@/views/admin/settings/index.vue'), meta: { title: '系统设置' } }
+         ]
        },
