@@ -7,6 +7,8 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import './styles/main.scss'
 
+// import axios setup so interceptors register
+import './api/axios'
 
 const app = createApp(App)
 
