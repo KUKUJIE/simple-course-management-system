@@ -6,10 +6,15 @@
            meta: { title: '批阅提交' }
          },
 +        {
-+          path: 'homeworks/:id/stats',
-+          name: 'TeacherHomeworkStats',
-+          component: () => import('@/views/teacher/homework/HomeworkStats.vue'),
-+          meta: { title: '作业统计' }
-+        }
++          path: 'homeworks/create',
++          name: 'TeacherHomeworkCreate',
++          component: () => import('@/views/teacher/homework/CreateHomework.vue'),
++          meta: { title: '创建作业' }
++        },
+         {
+           path: 'homeworks/:id/stats',
+           name: 'TeacherHomeworkStats',
+           component: () => import('@/views/teacher/homework/HomeworkStats.vue'),
+           meta: { title: '作业统计' }
+         }
        ]
-@@
