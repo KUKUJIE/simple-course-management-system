@@ -1,5 +1,6 @@
 package com.agiantii.backend.controller;
 
+import com.agiantii.backend.common.R;
 import com.agiantii.backend.common.TokenStore;
 import com.agiantii.backend.dto.GradeRequest;
 import com.agiantii.backend.mapper.HomeworkAnswerMapper;
@@ -40,25 +41,25 @@ public class GradingController {
 
     @PostMapping("/submissions/{submissionId}/grade")
     @Transactional
-    public ResponseEntity<?> gradeSubmission(@PathVariable("submissionId") Long submissionId, @RequestBody GradeRequest req, @RequestHeader(value = "Authorization", required = false) String authHeader) {
+    public R<HomeworkSubmission> gradeSubmission(@PathVariable("submissionId") Long submissionId, @RequestBody GradeRequest req, @RequestHeader(value = "Authorization", required = false) String authHeader) {
         HomeworkSubmission submission = submissionMapper.selectById(submissionId);
-        if (submission == null) return ResponseEntity.badRequest().body("Submission not found");
+        if (submission == null) return R.error("Submission not found",400);
 
         // require authentication and teacher role
         Map<String, Object> tokenInfo = tokenStore.resolve(authHeader);
         if (tokenInfo == null) {
-            return ResponseEntity.status(401).body("Authentication required");
+            return R.error("Authentication required",401);
         }
         String role = (String) tokenInfo.get("role");
         Integer entityId = (Integer) tokenInfo.get("entityId");
         if (!"teacher".equals(role)) {
-            return ResponseEntity.status(403).body("Only teachers can grade submissions");
+            return R.error("Only teachers can grade submissions",403);
         }
 
         Homework hw = homeworkMapper.selectById(submission.getHomeworkId());
-        if (hw == null) return ResponseEntity.badRequest().body("Homework not found");
+        if (hw == null) return R.error("Homework not found",400);
         if (!entityId.equals(hw.getTeacherId().intValue())) {
-            return ResponseEntity.status(403).body("Teacher not authorized to grade this submission");
+            return R.error("Teacher not authorized to grade this submission",403);
         }
 
         double total = 0.0;
@@ -80,7 +81,7 @@ public class GradingController {
         submission.setStatus("graded");
         submissionMapper.updateById(submission);
 
-        return ResponseEntity.ok(submission);
+        return R.success(submission, "Graded");
     }
 
     @GetMapping("/homeworks/{homeworkId}/export")
@@ -91,9 +92,9 @@ public class GradingController {
             String role = (String) tokenInfo.get("role");
             Integer entityId = (Integer) tokenInfo.get("entityId");
             Homework hw = homeworkMapper.selectById(homeworkId);
-            if (hw == null) return ResponseEntity.badRequest().body("Homework not found");
+            if (hw == null) return ResponseEntity.badRequest().body(R.error("Homework not found",400));
             if ("teacher".equals(role) && !entityId.equals(hw.getTeacherId().intValue())) {
-                return ResponseEntity.status(403).body("Teacher not authorized to export this homework");
+                return ResponseEntity.status(403).body(R.error("Teacher not authorized to export this homework",403));
             }
             // admins allowed
         }
@@ -121,7 +122,7 @@ public class GradingController {
             csvBytes = CsvUtil.toCsvBytes(rows, header);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body("Failed to generate CSV: " + e.getMessage());
+            return ResponseEntity.status(500).body(R.error("Failed to generate CSV: " + e.getMessage(),500));
         }
 
         HttpHeaders headers = new HttpHeaders();

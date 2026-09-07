@@ -1,5 +1,6 @@
 package com.agiantii.backend.controller;
 
+import com.agiantii.backend.common.R;
 import com.agiantii.backend.common.TokenStore;
 import com.agiantii.backend.mapper.HomeworkMapper;
 import com.agiantii.backend.mapper.HomeworkSubmissionMapper;
@@ -8,7 +9,6 @@ import com.agiantii.backend.pojo.homework.HomeworkSubmission;
 import com.agiantii.backend.utils.FileStorageUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,7 +32,7 @@ public class SubmissionController {
     private TokenStore tokenStore;
 
     @PostMapping("/{id}/submissions")
-    public ResponseEntity<?> submitHomework(
+    public R<HomeworkSubmission> submitHomework(
             @PathVariable("id") Long homeworkId,
             @RequestParam(value = "studentId", required = false) Long studentIdParam,
             @RequestParam(value = "submitText", required = false) String submitText,
@@ -47,7 +47,7 @@ public class SubmissionController {
             // token contains entityId which maps to student/teacher/admin entity
             Object role = tokenInfo.get("role");
             if (!"student".equals(role)) {
-                return ResponseEntity.status(403).body("Only students can submit homeworks with token authentication");
+                return R.error("Only students can submit homeworks with token authentication",403);
             }
             Integer entityId = (Integer) tokenInfo.get("entityId");
             if (entityId != null) studentId = entityId.longValue();
@@ -56,13 +56,13 @@ public class SubmissionController {
         // fallback to request param if token not present
         if (studentId == null) {
             if (studentIdParam == null) {
-                return ResponseEntity.status(400).body("studentId is required when no Authorization token provided");
+                return R.error("studentId is required when no Authorization token provided",400);
             }
             studentId = studentIdParam;
         }
 
         Homework hw = homeworkMapper.selectById(homeworkId);
-        if (hw == null) return ResponseEntity.badRequest().body("Homework not found");
+        if (hw == null) return R.error("Homework not found",400);
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime deadline = hw.getDeadline();
@@ -71,7 +71,7 @@ public class SubmissionController {
             isLate = true;
         }
         if (isLate && (hw.getAllowLate() == null || hw.getAllowLate() == 0)) {
-            return ResponseEntity.status(400).body("Deadline passed and late submissions are not allowed");
+            return R.error("Deadline passed and late submissions are not allowed",400);
         }
 
         String attachmentPath = null;
@@ -82,7 +82,7 @@ public class SubmissionController {
                 attachmentPath = FileStorageUtil.saveFile(file);
             } catch (IOException e) {
                 e.printStackTrace();
-                return ResponseEntity.status(400).body("File save failed: " + e.getMessage());
+                return R.error("File save failed: " + e.getMessage(),400);
             }
         }
 
@@ -97,13 +97,13 @@ public class SubmissionController {
 
         int inserted = submissionMapper.insert(submission);
         if (inserted > 0) {
-            return ResponseEntity.ok(submission);
+            return R.success(submission, "Submitted");
         }
-        return ResponseEntity.status(500).body("Failed to save submission");
+        return R.error("Failed to save submission",500);
     }
 
     @GetMapping("/{id}/submissions")
-    public ResponseEntity<?> listSubmissions(@PathVariable("id") Long homeworkId, @RequestHeader(value = "Authorization", required = false) String authHeader) {
+    public R<List<HomeworkSubmission>> listSubmissions(@PathVariable("id") Long homeworkId, @RequestHeader(value = "Authorization", required = false) String authHeader) {
         // if token present, only allow teachers of this homework or admins
         Map<String, Object> tokenInfo = tokenStore.resolve(authHeader);
         if (tokenInfo != null) {
@@ -111,9 +111,9 @@ public class SubmissionController {
             Integer entityId = (Integer) tokenInfo.get("entityId");
             if ("teacher".equals(role)) {
                 Homework hw = homeworkMapper.selectById(homeworkId);
-                if (hw == null) return ResponseEntity.badRequest().body("Homework not found");
+                if (hw == null) return R.error("Homework not found",400);
                 if (!entityId.equals(hw.getTeacherId().intValue())) {
-                    return ResponseEntity.status(403).body("Teacher not authorized to view submissions for this homework");
+                    return R.error("Teacher not authorized to view submissions for this homework",403);
                 }
             }
             // admins allowed
@@ -123,13 +123,13 @@ public class SubmissionController {
                 new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<HomeworkSubmission>()
                         .eq("homework_id", homeworkId)
         );
-        return ResponseEntity.ok(list);
+        return R.success(list, "ok");
     }
 
     @GetMapping("/submissions/{submissionId}")
-    public ResponseEntity<?> getSubmission(@PathVariable("submissionId") Long submissionId, @RequestHeader(value = "Authorization", required = false) String authHeader) {
+    public R<HomeworkSubmission> getSubmission(@PathVariable("submissionId") Long submissionId, @RequestHeader(value = "Authorization", required = false) String authHeader) {
         HomeworkSubmission s = submissionMapper.selectById(submissionId);
-        if (s == null) return ResponseEntity.notFound().build();
+        if (s == null) return R.error("Submission not found",404);
 
         Map<String, Object> tokenInfo = tokenStore.resolve(authHeader);
         if (tokenInfo != null) {
@@ -137,17 +137,17 @@ public class SubmissionController {
             Integer entityId = (Integer) tokenInfo.get("entityId");
             if ("student".equals(role)) {
                 if (!entityId.equals(s.getStudentId().intValue())) {
-                    return ResponseEntity.status(403).body("Student not authorized to view this submission");
+                    return R.error("Student not authorized to view this submission",403);
                 }
             } else if ("teacher".equals(role)) {
                 Homework hw = homeworkMapper.selectById(s.getHomeworkId());
-                if (hw == null) return ResponseEntity.badRequest().body("Homework not found");
+                if (hw == null) return R.error("Homework not found",400);
                 if (!entityId.equals(hw.getTeacherId().intValue())) {
-                    return ResponseEntity.status(403).body("Teacher not authorized to view this submission");
+                    return R.error("Teacher not authorized to view this submission",403);
                 }
             }
         }
 
-        return ResponseEntity.ok(s);
+        return R.success(s, "ok");
     }
 }
