@@ -1,8 +1,11 @@
 package com.agiantii.backend.controller;
 
+import com.agiantii.backend.common.TokenStore;
 import com.agiantii.backend.dto.GradeRequest;
 import com.agiantii.backend.mapper.HomeworkAnswerMapper;
+import com.agiantii.backend.mapper.HomeworkMapper;
 import com.agiantii.backend.mapper.HomeworkSubmissionMapper;
+import com.agiantii.backend.pojo.homework.Homework;
 import com.agiantii.backend.pojo.homework.HomeworkAnswer;
 import com.agiantii.backend.pojo.homework.HomeworkSubmission;
 import com.agiantii.backend.utils.CsvUtil;
@@ -13,9 +16,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -27,11 +32,34 @@ public class GradingController {
     @Autowired
     private HomeworkAnswerMapper answerMapper;
 
+    @Autowired
+    private HomeworkMapper homeworkMapper;
+
+    @Resource
+    private TokenStore tokenStore;
+
     @PostMapping("/submissions/{submissionId}/grade")
     @Transactional
-    public ResponseEntity<?> gradeSubmission(@PathVariable("submissionId") Long submissionId, @RequestBody GradeRequest req) {
+    public ResponseEntity<?> gradeSubmission(@PathVariable("submissionId") Long submissionId, @RequestBody GradeRequest req, @RequestHeader(value = "Authorization", required = false) String authHeader) {
         HomeworkSubmission submission = submissionMapper.selectById(submissionId);
         if (submission == null) return ResponseEntity.badRequest().body("Submission not found");
+
+        // require authentication and teacher role
+        Map<String, Object> tokenInfo = tokenStore.resolve(authHeader);
+        if (tokenInfo == null) {
+            return ResponseEntity.status(401).body("Authentication required");
+        }
+        String role = (String) tokenInfo.get("role");
+        Integer entityId = (Integer) tokenInfo.get("entityId");
+        if (!"teacher".equals(role)) {
+            return ResponseEntity.status(403).body("Only teachers can grade submissions");
+        }
+
+        Homework hw = homeworkMapper.selectById(submission.getHomeworkId());
+        if (hw == null) return ResponseEntity.badRequest().body("Homework not found");
+        if (!entityId.equals(hw.getTeacherId().intValue())) {
+            return ResponseEntity.status(403).body("Teacher not authorized to grade this submission");
+        }
 
         double total = 0.0;
         if (req.getAnswers() != null) {
@@ -41,14 +69,13 @@ public class GradingController {
                 answer.setQuestionId(ag.getQuestionId());
                 answer.setScoreGiven(ag.getScoreGiven());
                 answer.setComment(ag.getComment());
-                // insert as new answer record
                 answerMapper.insert(answer);
                 if (ag.getScoreGiven() != null) total += ag.getScoreGiven();
             }
         }
 
         submission.setFinalScore(total);
-        submission.setGradedBy(req.getGraderId());
+        submission.setGradedBy(Long.valueOf(entityId));
         submission.setGradedAt(LocalDateTime.now());
         submission.setStatus("graded");
         submissionMapper.updateById(submission);
@@ -57,7 +84,20 @@ public class GradingController {
     }
 
     @GetMapping("/homeworks/{homeworkId}/export")
-    public ResponseEntity<?> exportHomeworkCsv(@PathVariable("homeworkId") Long homeworkId) {
+    public ResponseEntity<?> exportHomeworkCsv(@PathVariable("homeworkId") Long homeworkId, @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        // only teacher of this homework or admin can export
+        Map<String, Object> tokenInfo = tokenStore.resolve(authHeader);
+        if (tokenInfo != null) {
+            String role = (String) tokenInfo.get("role");
+            Integer entityId = (Integer) tokenInfo.get("entityId");
+            Homework hw = homeworkMapper.selectById(homeworkId);
+            if (hw == null) return ResponseEntity.badRequest().body("Homework not found");
+            if ("teacher".equals(role) && !entityId.equals(hw.getTeacherId().intValue())) {
+                return ResponseEntity.status(403).body("Teacher not authorized to export this homework");
+            }
+            // admins allowed
+        }
+
         List<HomeworkSubmission> submissions = submissionMapper.selectList(
                 new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<HomeworkSubmission>().eq("homework_id", homeworkId)
         );
