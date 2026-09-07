@@ -34,7 +34,6 @@ public class SubmissionController {
     @PostMapping("/{id}/submissions")
     public R<HomeworkSubmission> submitHomework(
             @PathVariable("id") Long homeworkId,
-            @RequestParam(value = "studentId", required = false) Long studentIdParam,
             @RequestParam(value = "submitText", required = false) String submitText,
             @RequestPart(value = "file", required = false) MultipartFile file,
             @RequestHeader(value = "Authorization", required = false) String authHeader
@@ -53,12 +52,8 @@ public class SubmissionController {
             if (entityId != null) studentId = entityId.longValue();
         }
 
-        // fallback to request param if token not present
         if (studentId == null) {
-            if (studentIdParam == null) {
-                return R.error("studentId is required when no Authorization token provided",400);
-            }
-            studentId = studentIdParam;
+            return R.error("studentId is required when no Authorization token provided",400);
         }
 
         Homework hw = homeworkMapper.selectById(homeworkId);
